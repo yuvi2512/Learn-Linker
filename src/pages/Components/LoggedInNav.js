@@ -148,6 +148,17 @@ const NavBar = () => {
                   Assignment
                   </Button>
                 </Link>
+                <Link href="/Components/StudentSection/generateNotes" passHref>
+                  <Button
+                    sx={
+                      isActive("/Components/StudentSection/generateNotes")
+                        ? activeStyle
+                        : { color: "white" }
+                    }
+                  >
+                    Generate Notes
+                  </Button>
+                </Link>
                </>
             )}
             <Button sx={{ color: "white" }} onClick={handleLogout}>

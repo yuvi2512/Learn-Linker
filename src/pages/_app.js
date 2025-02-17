@@ -7,7 +7,7 @@ import { SessionProvider, useSession } from "next-auth/react";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import theme from "./theme";
+import theme from "../theme";
 
 function AuthWrapper({ Component, pageProps }) {
   const [LoggedIn, setLoggedIn] = useState(false);

@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import User  from '../../models/user';
+import User  from '../../../models/user';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end(); 
