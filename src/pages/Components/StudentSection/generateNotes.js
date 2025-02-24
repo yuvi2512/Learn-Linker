@@ -47,13 +47,31 @@ export default function Home() {
 
   const saveAsPDF = (notes) => {
     const doc = new jsPDF();
+    const marginLeft = 10;
+    const marginTop = 10;
+    const pageHeight = doc.internal.pageSize.height;
+    const maxWidth = 180;
+    let y = marginTop + 20; // Start below the title
+  
     doc.setFontSize(16);
-    doc.text(`Subject: ${subject}`, 10, 10);
-    doc.text(`Topic: ${topic}`, 10, 20);
+    doc.text(`Subject: ${subject}`, marginLeft, marginTop);
+    doc.text(`Topic: ${topic}`, marginLeft, marginTop + 10);
     doc.setFontSize(12);
-    doc.text(notes, 10, 30, { maxWidth: 180 });
+  
+    const splitNotes = doc.splitTextToSize(notes, maxWidth); // Split text to fit width
+  
+    splitNotes.forEach((line) => {
+      if (y + 10 > pageHeight - 10) {
+        doc.addPage();
+        y = marginTop; 
+      }
+      doc.text(line, marginLeft, y);
+      y += 7; 
+    });
+  
     doc.save(`${subject}_${topic}.pdf`);
   };
+  
 
   return (
     <>
