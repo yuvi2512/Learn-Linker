@@ -1,5 +1,5 @@
 "use client";
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AppBar,
   Toolbar,
@@ -45,7 +45,7 @@ const NavBar = () => {
         router.push("/Components/studentHome");
       }
     }
-  }, [router.pathname, session]); 
+  }, [router.pathname, session]);
 
   return (
     <>
@@ -111,6 +111,21 @@ const NavBar = () => {
                     Test
                   </Button>
                 </Link>
+                {session?.user.email === "jayesh.surana@gmail.com" && (
+                  <>
+                    <Link href="/Components/GenerateTimeTable" passHref>
+                      <Button
+                        sx={
+                          isActive("/Components/GenerateTimeTable")
+                            ? activeStyle
+                            : { color: "white" }
+                        }
+                      >
+                        Generate Time Table
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </>
             )}
             {session?.user.role === "student" && (
@@ -145,7 +160,7 @@ const NavBar = () => {
                         : { color: "white" }
                     }
                   >
-                  Assignment
+                    Assignment
                   </Button>
                 </Link>
                 <Link href="/Components/StudentSection/generateNotes" passHref>
@@ -159,8 +174,19 @@ const NavBar = () => {
                     Generate Notes
                   </Button>
                 </Link>
-               </>
+              </>
             )}
+            <Link href="/Components/ShowTimeTable" passHref>
+              <Button
+                sx={
+                  isActive("/Components/ShowTimeTable")
+                    ? activeStyle
+                    : { color: "white" }
+                }
+              >
+                Show Time Table
+              </Button>
+            </Link>
             <Button sx={{ color: "white" }} onClick={handleLogout}>
               Logout
             </Button>

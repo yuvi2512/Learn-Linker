@@ -1,4 +1,4 @@
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid,GridToolbar } from "@mui/x-data-grid";
 import {
   Card,
   TextField,
@@ -6,7 +6,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Tabs,
+  Tab,
+  Typography,
 } from "@mui/material";
+import moment from "moment";
 import Box from "@mui/material/Box";
 import CardHeader from "@mui/material/CardHeader";
 import CardContent from "@mui/material/CardContent";
@@ -20,26 +24,30 @@ const Attendance = () => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [rows, setRows] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
+  const [attendanceRows, setAttendanceRows] = useState([]);
+  const [attendanceColumns, setAttendanceColumns] = useState([]);
+
   const [attendanceData, setAttendanceData] = useState([]);
   const [attendanceCounts, setAttendanceCounts] = useState({
     total: rows.length,
     Absent: rows.length,
     Present: 0,
   });
+  const [value, setValue] = useState(0);
   const [selectedDate, setSelectedDate] = useState();
 
-  const { data: session, status } = useSession();  
+  const { data: session } = useSession();
 
+  console.log(session)
   const fetchData = async () => {
     try {
       const response = await axios.get("/api/getStudentAPI");
       if (response.data) {
-
         const sortedData = response.data
           .sort((a, b) => a.name.localeCompare(b.name))
           .map((student, index) => ({
             ...student,
-            srNo: index + 1, 
+            srNo: index + 1,
           }));
         setRows(sortedData);
       }
@@ -48,7 +56,10 @@ const Attendance = () => {
       toast.error("Failed to fetch students data.");
     }
   };
-  
+
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
+  };
 
   useEffect(() => {
     GetAttendance();
@@ -91,7 +102,6 @@ const Attendance = () => {
     const presentCount = selectedIds.length;
     const absentCount = rows.length - presentCount;
 
-   
     const preparedAttendanceData = rows.map((student) => {
       const isPresent = selectedIds.includes(student.id.toString());
       return {
@@ -113,8 +123,8 @@ const Attendance = () => {
       setAttendanceData(preparedAttendanceData);
       setOpenDialog(true);
     } else {
-      setAttendanceData(preparedAttendanceData); 
-      submitAttendance(preparedAttendanceData); 
+      setAttendanceData(preparedAttendanceData);
+      submitAttendance(preparedAttendanceData);
     }
   };
 
@@ -125,6 +135,8 @@ const Attendance = () => {
       });
       if (response.status === 200) {
         toast.success("Attendance submitted successfully!");
+        GetAttendance();
+        setValue(0)
       }
     } catch (error) {
       console.error("Error submitting attendance:", error);
@@ -135,7 +147,7 @@ const Attendance = () => {
   const CheckAttendance = async () => {
     try {
       const response = await axios.get("/api/AttendanceAPI", {
-        params: { service:'CHECKATTENDANCE',selectedDate: selectedDate },
+        params: { service: "CHECKATTENDANCE", selectedDate: selectedDate },
       });
       if (response.status === 200 && response.data.length > 0) {
         return true;
@@ -150,10 +162,12 @@ const Attendance = () => {
   const GetAttendance = async () => {
     try {
       const response = await axios.get("/api/AttendanceAPI", {
-        params: { service:'GETATTENDANCE'},
+        params: { service: "GETATTENDANCE" },
       });
       if (response.status === 200 && response.data.length > 0) {
-       console.log(response.data)
+        const { rows, columns } = processAttendanceData(response.data);
+        setAttendanceRows(rows);
+        setAttendanceColumns(columns);
       }
     } catch (error) {
       console.error("Error Getting attendance:", error);
@@ -161,71 +175,159 @@ const Attendance = () => {
     }
   };
 
+  const processAttendanceData = (data) => {
+    const studentsMap = {};
+
+    const uniqueDates = [
+      ...new Set(data.map((item) => new Date(item.date).toLocaleDateString())),
+    ];
+
+    data.forEach((record) => {
+      const formattedDate = new Date(record.date).toLocaleDateString();
+      if (!studentsMap[record.student_id]) {
+        studentsMap[record.student_id] = {
+          id: record.student_id,
+          student_name: record.student_name,
+          present_count: 0, 
+        };
+        uniqueDates.forEach((date) => {
+          studentsMap[record.student_id][date] = "Absent";
+        });
+      }
+ 
+      studentsMap[record.student_id][formattedDate] = record.present
+        ? "Present"
+        : "Absent";
+      if (record.present) studentsMap[record.student_id].present_count++;
+    });
+
+    return {
+      rows: Object.values(studentsMap).map((student) => ({
+        ...student,
+        total_classes: uniqueDates.length,  // Total classes held
+      })),
+      columns: [
+        { field: "student_name", headerName: "Student Name", flex: 1 },
+        {
+          field: "present_count",
+          headerName: "Total Present",
+          flex: 1,
+          align: "center",
+        },
+        {
+          field: "total_classes",
+          headerName: "Total Classes Held",  // New column
+          flex: 1,
+          align: "center",
+        },
+        ...uniqueDates.map((date) => ({
+          field: date,
+          headerName: moment(date, "MM/DD/YYYY").format("DD/MM/YYYY"),
+          flex: 1,
+          align: "center",
+          headerAlign: "center",
+        })),
+      ],
+    };
+  };
+
   return (
     <>
-      <Card sx={{m: 5}}>
+      <Card sx={{ m: 5 }}>
         <CardHeader sx={{ pb: 2, pt: 2 }} title="Attendance Summary" />
         <Divider />
         <CardContent sx={{ mt: 5 }}>
-          <Box sx={{ marginBottom: 2 }}>
-            <TextField
-              variant="outlined"
-              size="small"
-              fullWidth
-              type="date"
-              onChange={(e) => setSelectedDate(e.target.value)}
-            />
-          </Box>
-          <Box sx={{ height: "fit", width: "100%" }}>
-            <DataGrid
-              rows={[
-                {
-                  id: 1,
-                  total: attendanceCounts.total,
-                  Absent: attendanceCounts.Absent,
-                  Present: attendanceCounts.Present,
-                },
-              ]}
-              columns={[
-                {
-                  field: "total",
-                  headerName: "Total No. of Students",
-                  width: 150,
-                },
-                {
-                  field: "Absent",
-                  headerName: "Absent",
-                  width: 150,
-                },
-                {
-                  field: "Present",
-                  headerName: "Present",
-                  width: 150,
-                },
-                {
-                  field: "submit",
-                  headerName: "Submit",
-                  width: 300,
-                  renderCell: () => (
-                    <Button variant="contained" onClick={handleSubmit}>
-                      Submit
-                    </Button>
-                  ),
-                },
-              ]}
-              hideFooter
-            />
-          </Box>
-          <DataGrid
-          sx={{ mb: 2, mt: 4 }}
-            rows={rows}
-            columns={columns}
-            getRowId={(row) => `${row.id}`}
-            checkboxSelection
-            onRowSelectionModelChange={(newSelection) => {
-              handleSelectionChange(newSelection);
-            }}
-          />
+          <Tabs value={value} onChange={handleChange} centered>
+            <Tab label="View Attendance" />
+            <Tab label="Take Attendance" />
+          </Tabs>
+          {value === 0 && (
+            <>
+            {attendanceRows.length ===0 ? (
+              <Typography variant="h6" sx={{ mt: 2 }}>
+                No attendance data available.
+              </Typography>
+            ) : (
+              <Box sx={{ width: "100%", height: 400 }}>
+                <DataGrid
+                  rows={attendanceRows}
+                  columns={attendanceColumns}
+                  pageSize={5}
+                  slots={{ toolbar: GridToolbar }}
+                  slotProps={{
+                    toolbar: {
+                      showQuickFilter: true,
+                    },
+                  }}
+                  autoHeight
+                />
+              </Box>
+            )}
+            </>
+          )}
+          {value === 1 && (
+            <>
+              <Box sx={{ marginBottom: 2 }}>
+                <TextField
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  type="date"
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                />
+              </Box>
+              <Box sx={{ height: "fit", width: "100%" }}>
+                <DataGrid
+                  rows={[
+                    {
+                      id: 1,
+                      total: attendanceCounts.total,
+                      Absent: attendanceCounts.Absent,
+                      Present: attendanceCounts.Present,
+                    },
+                  ]}
+                  columns={[
+                    {
+                      field: "total",
+                      headerName: "Total No. of Students",
+                      width: 150,
+                    },
+                    {
+                      field: "Absent",
+                      headerName: "Absent",
+                      width: 150,
+                    },
+                    {
+                      field: "Present",
+                      headerName: "Present",
+                      width: 150,
+                    },
+                    {
+                      field: "submit",
+                      headerName: "Submit",
+                      width: 300,
+                      renderCell: () => (
+                        <Button variant="contained" onClick={handleSubmit}>
+                          Submit
+                        </Button>
+                      ),
+                    },
+                  ]}
+                  hideFooter
+                />
+              </Box>
+              <DataGrid
+                sx={{ mb: 2, mt: 4 }}
+                rows={rows}
+                columns={columns}
+                getRowId={(row) => `${row.id}`}
+                checkboxSelection
+                onRowSelectionModelChange={(newSelection) => {
+                  handleSelectionChange(newSelection);
+                }}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
 

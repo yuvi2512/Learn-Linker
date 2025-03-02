@@ -1,4 +1,3 @@
-
 import { pool } from "../../../lib/db";
 
 export default async function handler(req, res) {
@@ -31,7 +30,6 @@ export default async function handler(req, res) {
         }
       );
 
-
       await Promise.all(promises);
       await client.query("COMMIT");
 
@@ -45,15 +43,17 @@ export default async function handler(req, res) {
     } finally {
       client.release();
     }
-  }
-  else if (req.method === "GET") {
+  } else if (req.method === "GET") {
     const { service, selectedDate } = req.query;
 
-    if (service == 'CHECKATTENDANCE') {
+    if (service == "CHECKATTENDANCE") {
       try {
         const client = await pool.connect();
         try {
-          const result = await client.query("SELECT * FROM public.attendance WHERE date = $1", [selectedDate]);
+          const result = await client.query(
+            "SELECT * FROM public.attendance WHERE date = $1",
+            [selectedDate]
+          );
 
           res.status(200).json(result.rows);
         } finally {
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
         res.status(500).json({ error: "An error occurred" });
       }
     }
-    if (service == 'GETATTENDANCE') {
+    if (service == "GETATTENDANCE") {
       try {
         const client = await pool.connect();
         try {
@@ -79,9 +79,24 @@ export default async function handler(req, res) {
         res.status(500).json({ error: "An error occurred" });
       }
     }
-  }
+    if (service == "GETTEACHERS") {
+      try {
+        const client = await pool.connect();
+        try {
+          const result = await client.query(
+            "SELECT * from public.users where role ='teacher'"
+          );
 
-  else {
+          res.status(200).json(result.rows);
+        } finally {
+          client.release();
+        }
+      } catch (error) {
+        console.error("Error executing query", error);
+        res.status(500).json({ error: "An error occurred" });
+      }
+    }
+  } else {
     res.status(405).json({ error: "Method Not Allowed" });
   }
 }
