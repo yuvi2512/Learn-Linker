@@ -3,7 +3,7 @@ import NavBar from "@/pages/Components/navBar.js";
 import LoggedInNav from "@/pages/Components/LoggedInNav";
 import { useState, useEffect } from "react";
 import { SessionProvider, useSession } from "next-auth/react";
-// import "../app/globals.css";
+ import "../app/globals.css";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";

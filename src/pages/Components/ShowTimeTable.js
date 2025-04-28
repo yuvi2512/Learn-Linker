@@ -8,6 +8,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Card,
+  CardHeader,
+  CardContent,
+  Divider,
   Paper,
   Button,
 } from "@mui/material";
@@ -41,7 +45,7 @@ const ShowTimeTable = () => {
 
     const canvas = await html2canvas(table);
     const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("l", "mm", "a4"); 
+    const pdf = new jsPDF("l", "mm", "a4");
     const imgWidth = 280;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
@@ -79,7 +83,7 @@ const ShowTimeTable = () => {
 
   const subjectSchedule = [];
   timeTable.forEach((item) => {
-    const slot = timeSlotMapping[item.timeslot]; 
+    const slot = timeSlotMapping[item.timeslot];
     if (slot) {
       for (let i = 0; i < parseInt(item.classesperweek, 10); i++) {
         subjectSchedule.push({
@@ -106,44 +110,49 @@ const ShowTimeTable = () => {
   });
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Class Time Table</h2>
-      <TableContainer
-        component={Paper}
-        ref={tableRef}
-        style={{ marginBottom: "20px" }}
-      >
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                <strong>Day</strong>
-              </TableCell>
-              {timeSlots.map((slot) => (
-                <TableCell key={slot}>
-                  <strong>{slot}</strong>
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {structuredTimeTable.map((row, index) => (
-              <TableRow key={index}>
+    <>
+      <Card sx={{ m: 5 }}>
+        <CardHeader sx={{ pb: 2, pt: 2 }} title="Class Time Table" />
+        <Divider />
+        <CardContent sx={{ mt: 5 }}>
+        <TableContainer
+          component={Paper}
+          ref={tableRef}
+          style={{ marginBottom: "20px" }}
+        >
+          <Table>
+            <TableHead>
+              <TableRow>
                 <TableCell>
-                  <strong>{row.day}</strong>
+                  <strong>Day</strong>
                 </TableCell>
                 {timeSlots.map((slot) => (
-                  <TableCell key={slot}>{row[slot]}</TableCell>
+                  <TableCell key={slot}>
+                    <strong>{slot}</strong>
+                  </TableCell>
                 ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <Button variant="contained" color="primary" onClick={handleSavePDF}>
-        Save as PDF
-      </Button>
-    </div>
+            </TableHead>
+            <TableBody>
+              {structuredTimeTable.map((row, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <strong>{row.day}</strong>
+                  </TableCell>
+                  {timeSlots.map((slot) => (
+                    <TableCell key={slot}>{row[slot]}</TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <Button variant="contained" color="primary" onClick={handleSavePDF}>
+          Save as PDF
+        </Button>
+        </CardContent>
+      </Card>
+    </>
   );
 };
 

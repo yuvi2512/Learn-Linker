@@ -33,8 +33,9 @@ const NavBar = () => {
   const isActive = (pathname) => router.pathname === pathname;
 
   const activeStyle = {
-    color: "black",
+    color: "#00BFFF",
     fontWeight: "bold",
+    textShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
   };
 
   useEffect(() => {
@@ -49,18 +50,42 @@ const NavBar = () => {
 
   return (
     <>
-      <AppBar position="static" color="primary">
+      <AppBar
+        position="sticky"
+        sx={{
+          background: "rgba(0, 0, 0, 0.6)",
+          backdropFilter: "blur(10px)",
+          boxShadow: "0px 4px 20px rgba(255, 255, 255, 0.1)",
+        }}
+      >
         <Toolbar>
           <IconButton
             edge="start"
             color="inherit"
             aria-label="menu"
-            sx={{ mr: 2, display: { xs: "block", md: "none" } }}
+            sx={{
+              mr: 2,
+              display: { xs: "block", md: "none" },
+              transition: "transform 0.3s ease-in-out",
+              "&:hover": {
+                transform: "scale(1.1)",
+              },
+            }}
             onClick={handleDrawerToggle}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{
+              flexGrow: 1,
+              fontWeight: "bold",
+              letterSpacing: "2px",
+              color: "#00BFFF",
+              textShadow: "0px 0px 15px rgba(0, 191, 255, 0.8)",
+            }}
+          >
             Learn Linker
           </Typography>
 
@@ -69,44 +94,64 @@ const NavBar = () => {
               <>
                 <Link href="/Components/Attendance" passHref>
                   <Button
-                    sx={
-                      isActive("/Components/Attendance")
+                    sx={{
+                      ...(isActive("/Components/Attendance")
                         ? activeStyle
-                        : { color: "white" }
-                    }
+                        : { color: "white" }),
+                      transition: "all 0.3s ease-in-out",
+                      "&:hover": {
+                        transform: "translateY(-3px)",
+                        color: "#00BFFF",
+                      },
+                    }}
                   >
                     Attendance
                   </Button>
                 </Link>
                 <Link href="/Components/GenerateMarksheet" passHref>
                   <Button
-                    sx={
-                      isActive("/Components/GenerateMarksheet")
+                    sx={{
+                      ...(isActive("/Components/GenerateMarksheet")
                         ? activeStyle
-                        : { color: "white" }
-                    }
+                        : { color: "white" }),
+                      transition: "all 0.3s ease-in-out",
+                      "&:hover": {
+                        transform: "translateY(-3px)",
+                        color: "#00BFFF",
+                      },
+                    }}
                   >
                     Marksheet
                   </Button>
                 </Link>
                 <Link href="/Components/Assignments" passHref>
                   <Button
-                    sx={
-                      isActive("/Components/Assignments")
+                    sx={{
+                      ...(isActive("/Components/Assignments")
                         ? activeStyle
-                        : { color: "white" }
-                    }
+                        : { color: "white" }),
+                      transition: "all 0.3s ease-in-out",
+                      "&:hover": {
+                        transform: "translateY(-3px)",
+                        color: "#00BFFF",
+                      },
+                    }}
                   >
                     Assignment
                   </Button>
                 </Link>
                 <Link href="/Components/Test" passHref>
                   <Button
-                    sx={
-                      isActive("/Components/Test")
+                    sx={{
+                      ...(isActive("/Components/Test")
                         ? activeStyle
-                        : { color: "white" }
-                    }
+                        : { color: "white" }),
+                      transition: "all 0.3s ease-in-out",
+                      "&:hover": {
+                        transform: "translateY(-3px)",
+                        color: "#00BFFF",
+                      },
+                    }}
                   >
                     Test
                   </Button>
@@ -115,11 +160,16 @@ const NavBar = () => {
                   <>
                     <Link href="/Components/GenerateTimeTable" passHref>
                       <Button
-                        sx={
-                          isActive("/Components/GenerateTimeTable")
+                        sx={{
+                          ...(isActive("/Components/GenerateTimeTable")
                             ? activeStyle
-                            : { color: "white" }
-                        }
+                            : { color: "white" }),
+                          transition: "all 0.3s ease-in-out",
+                          "&:hover": {
+                            transform: "translateY(-3px)",
+                            color: "#00BFFF",
+                          },
+                        }}
                       >
                         Generate Time Table
                       </Button>
@@ -132,44 +182,64 @@ const NavBar = () => {
               <>
                 <Link href="/Components/studentHome" passHref>
                   <Button
-                    sx={
-                      isActive("/Components/studentHome")
+                    sx={{
+                      ...(isActive("/Components/studentHome")
                         ? activeStyle
-                        : { color: "white" }
-                    }
+                        : { color: "white" }),
+                      transition: "all 0.3s ease-in-out",
+                      "&:hover": {
+                        transform: "translateY(-3px)",
+                        color: "#00BFFF",
+                      },
+                    }}
                   >
                     Home
                   </Button>
                 </Link>
                 <Link href="/Components/StudentSection/Marksheet" passHref>
                   <Button
-                    sx={
-                      isActive("/Components/StudentSection/Marksheet")
+                    sx={{
+                      ...(isActive("/Components/StudentSection/Marksheet")
                         ? activeStyle
-                        : { color: "white" }
-                    }
+                        : { color: "white" }),
+                      transition: "all 0.3s ease-in-out",
+                      "&:hover": {
+                        transform: "translateY(-3px)",
+                        color: "#00BFFF",
+                      },
+                    }}
                   >
                     View Result
                   </Button>
                 </Link>
                 <Link href="/Components/StudentSection/Assignment" passHref>
                   <Button
-                    sx={
-                      isActive("/Components/StudentSection/Assignment")
+                    sx={{
+                      ...(isActive("/Components/StudentSection/Assignment")
                         ? activeStyle
-                        : { color: "white" }
-                    }
+                        : { color: "white" }),
+                      transition: "all 0.3s ease-in-out",
+                      "&:hover": {
+                        transform: "translateY(-3px)",
+                        color: "#00BFFF",
+                      },
+                    }}
                   >
                     Assignment
                   </Button>
                 </Link>
                 <Link href="/Components/StudentSection/generateNotes" passHref>
                   <Button
-                    sx={
-                      isActive("/Components/StudentSection/generateNotes")
+                    sx={{
+                      ...(isActive("/Components/StudentSection/generateNotes")
                         ? activeStyle
-                        : { color: "white" }
-                    }
+                        : { color: "white" }),
+                      transition: "all 0.3s ease-in-out",
+                      "&:hover": {
+                        transform: "translateY(-3px)",
+                        color: "#00BFFF",
+                      },
+                    }}
                   >
                     Generate Notes
                   </Button>
@@ -178,16 +248,30 @@ const NavBar = () => {
             )}
             <Link href="/Components/ShowTimeTable" passHref>
               <Button
-                sx={
-                  isActive("/Components/ShowTimeTable")
+                sx={{
+                  ...(isActive("/Components/ShowTimeTable")
                     ? activeStyle
-                    : { color: "white" }
-                }
+                    : { color: "white" }),
+                  transition: "all 0.3s ease-in-out",
+                  "&:hover": {
+                    transform: "translateY(-3px)",
+                    color: "#00BFFF",
+                  },
+                }}
               >
                 Show Time Table
               </Button>
             </Link>
-            <Button sx={{ color: "white" }} onClick={handleLogout}>
+            <Button
+              sx={{
+                transition: "all 0.3s ease-in-out",
+                "&:hover": {
+                  transform: "translateY(-3px)",
+                  color: "#00BFFF",
+                },color: "white"
+              }}
+              onClick={handleLogout}
+            >
               Logout
             </Button>
           </Box>

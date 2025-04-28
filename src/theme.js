@@ -92,6 +92,7 @@ const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
+          animation: "fadeInUpZoomBounce 0.9s ease-out forwards",
           backgroundColor: "#ffffff",
           borderRadius: 16,
           boxShadow: "0px 6px 14px rgba(0, 0, 0, 0.15)", 
