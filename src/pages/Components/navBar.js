@@ -29,14 +29,15 @@ const NavBar = () => {
   }, [router.pathname]);
 
   return (
-    <AppBar
-      position="sticky"
-      sx={{
-        background: "rgba(0, 0, 0, 0.6)",
-        backdropFilter: "blur(10px)",
-        boxShadow: "0px 4px 20px rgba(255, 255, 255, 0.1)",
-      }}
-    >
+  <AppBar
+  position="absolute"
+  sx={{
+    backgroundColor: "rgba(0, 0, 0, 0.3)", 
+    boxShadow: "none",
+    zIndex: 10,
+  }}
+>
+
       <Toolbar>
         <IconButton
           edge="start"
@@ -60,8 +61,6 @@ const NavBar = () => {
             flexGrow: 1,
             fontWeight: "bold",
             letterSpacing: "2px",
-            color: "#00BFFF",
-            textShadow: "0px 0px 15px rgba(0, 191, 255, 0.8)",
           }}
         >
           Learn Linker

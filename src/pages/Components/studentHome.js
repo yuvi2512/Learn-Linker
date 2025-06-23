@@ -12,8 +12,9 @@ import {
   Avatar,
 } from "@mui/material";
 import { AppBar, Toolbar } from "@mui/material";
-import Image from "next/image"; 
+import Image from "next/image";
 import axios from "axios";
+import toast from "react-hot-toast";
 import AttendanceChart from "@/pages/Components/AttendanceChart";
 import UpcomingTest from "./StudentSection/UpcomingTest";
 
@@ -42,26 +43,10 @@ const HomePage = () => {
 
   return (
     <>
-    
       <Grid container spacing={6}>
-      <Grid item xs={12} sm={12} lg={2}>
-      <Image
-          src="/ProjectLogo.png"
-          alt="Learn Linker Logo"
-          width={150}
-          height={150}
-        />
-        </Grid>
-        <Grid item xs={12} sm={12} lg={8}>
-          <Box sx={{ textAlign: "center", pt: 6 }}>
-            <Typography variant="h2" component="h1" >
-              Welcome {session?.user?.name}
-            </Typography>
-          </Box>
-        </Grid>
         <Grid item xs={12} sm={6} lg={6}>
           {AttendanceData && (
-            <AttendanceChart attendanceData={AttendanceData} />
+            <AttendanceChart attendanceData={AttendanceData} studentName={session?.user?.name}/>
           )}
         </Grid>
         <Grid item xs={12} sm={6} lg={6}>
