@@ -49,7 +49,7 @@ const Login = () => {
 
   useEffect(() => {
     if (session?.user?.role == "student")
-      router.push("/Components/studentHome");
+      router.push("/Components/StudentSection/studentHome");
 
     if (session?.user?.role == "teacher") router.push("/Components/Attendance");
   }, [session?.user]);

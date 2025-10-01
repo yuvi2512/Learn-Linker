@@ -13,6 +13,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import toast from "react-hot-toast";
+import withAuth from "@/utils/withAuth";
 
 const timeSlots = [
   "8-9 AM",
@@ -202,4 +203,4 @@ const GenerateTimeTable = () => {
   );
 };
 
-export default GenerateTimeTable;
+export default withAuth(GenerateTimeTable, ["teacher"]);

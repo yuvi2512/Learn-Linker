@@ -15,6 +15,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import moment from "moment";
 import DeleteIcon from "@mui/icons-material/Delete";
+import withAuth from "@/utils/withAuth";
 
 const Test = () => {
   const [rows, setRows] = useState([]);
@@ -169,4 +170,4 @@ const Test = () => {
   );
 };
 
-export default Test;
+export default withAuth(Test, ["teacher"]);

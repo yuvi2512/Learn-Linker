@@ -43,7 +43,7 @@ const NavBar = () => {
       if (session?.user?.role === "teacher") {
         router.push("/Components/Attendance");
       } else if (session?.user?.role === "student") {
-        router.push("/Components/studentHome");
+        router.push("/Components/StudentSection/studentHome");
       }
     }
   }, [router.pathname, session]);
@@ -180,10 +180,10 @@ const NavBar = () => {
             )}
             {session?.user.role === "student" && (
               <>
-                <Link href="/Components/studentHome" passHref>
+                <Link href="/Components/StudentSection/studentHome" passHref>
                   <Button
                     sx={{
-                      ...(isActive("/Components/studentHome")
+                      ...(isActive("/Components/StudentSection/studentHome")
                         ? activeStyle
                         : { color: "white" }),
                       transition: "all 0.3s ease-in-out",
@@ -246,10 +246,10 @@ const NavBar = () => {
                 </Link>
               </>
             )}
-            <Link href="/Components/ShowTimeTable" passHref>
+            <Link href="/Components/StudentSection/ShowTimeTable" passHref>
               <Button
                 sx={{
-                  ...(isActive("/Components/ShowTimeTable")
+                  ...(isActive("/Components/StudentSection/ShowTimeTable")
                     ? activeStyle
                     : { color: "white" }),
                   transition: "all 0.3s ease-in-out",
@@ -373,12 +373,12 @@ const NavBar = () => {
       {session?.user.role === "student" && (
         <>
           <ListItem disablePadding>
-            <Link href="/Components/studentHome" passHref>
+            <Link href="/Components/StudentSection/studentHome" passHref>
               <Button
                 fullWidth
                 sx={{
                   justifyContent: "flex-start",
-                  ...(isActive("/Components/studentHome") ? activeStyle : {}),
+                  ...(isActive("/Components/StudentSection/studentHome") ? activeStyle : {}),
                 }}
               >
                 🏠 Home
@@ -429,12 +429,12 @@ const NavBar = () => {
 
       {/* Common Section */}
       <ListItem disablePadding>
-        <Link href="/Components/ShowTimeTable" passHref>
+        <Link href="/Components/StudentSection/ShowTimeTable" passHref>
           <Button
             fullWidth
             sx={{
               justifyContent: "flex-start",
-              ...(isActive("/Components/ShowTimeTable") ? activeStyle : {}),
+              ...(isActive("/Components/StudentSection/ShowTimeTable") ? activeStyle : {}),
             }}
           >
             📅 Show Time Table

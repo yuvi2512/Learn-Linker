@@ -6,6 +6,7 @@ import "jspdf-autotable";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import withAuth from "@/utils/withAuth";
 
 const Marksheet = () => {
   const [rows, setRows] = useState([]);
@@ -128,4 +129,4 @@ const Marksheet = () => {
   );
 };
 
-export default Marksheet;
+export default withAuth(Marksheet, ["student"]);

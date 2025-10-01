@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import toast from "react-hot-toast";
+import withAuth from "@/utils/withAuth";
 
 const Assignments = () => {
   const [selectedSubject, setSelectedSubject] = useState("");
@@ -111,4 +112,4 @@ const Assignments = () => {
   );
 };
 
-export default Assignments;
+export default withAuth(Assignments, ["teacher"]);

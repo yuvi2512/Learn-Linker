@@ -6,16 +6,11 @@ import moment from "moment";
 import {
   Card,
   CardContent,
-  TextField,
-  Button,
-  Grid,
   CardHeader,
-  Divider,
-  Box,
   Typography,
-  paper
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+import withAuth from "@/utils/withAuth";
 
 const Assignment = () => {
   const { data: session } = useSession();
@@ -93,4 +88,4 @@ const Assignment = () => {
   );
 };
 
-export default Assignment;
+export default withAuth(Assignment, ["student"]);

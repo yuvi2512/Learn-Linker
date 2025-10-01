@@ -19,6 +19,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import withAuth from "@/utils/withAuth";
 
 const Attendance = () => {
   const [selectedIds, setSelectedIds] = useState([]);
@@ -38,7 +39,6 @@ const Attendance = () => {
 
   const { data: session } = useSession();
 
-  console.log(session)
   const fetchData = async () => {
     try {
       const response = await axios.get("/api/getStudentAPI");
@@ -359,4 +359,4 @@ const Attendance = () => {
   );
 };
 
-export default Attendance;
+export default withAuth(Attendance, ["teacher"]);

@@ -15,6 +15,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import moment from "moment";
 import { DataGrid } from "@mui/x-data-grid";
+import withAuth from "@/utils/withAuth";
 
 const UpcomingTest = () => {
   const [rows, setRows] = useState([]);
@@ -70,4 +71,4 @@ const UpcomingTest = () => {
   );
 };
 
-export default UpcomingTest;
+export default withAuth(UpcomingTest, ["student"]);

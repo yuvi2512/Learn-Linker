@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import withAuth from "@/utils/withAuth";
 
 const ShowTimeTable = () => {
   const [timeTable, setTimeTable] = useState([]);
@@ -156,4 +157,4 @@ const ShowTimeTable = () => {
   );
 };
 
-export default ShowTimeTable;
+export default withAuth(ShowTimeTable, ["student"]);

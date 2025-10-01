@@ -16,7 +16,8 @@ import Image from "next/image";
 import axios from "axios";
 import toast from "react-hot-toast";
 import AttendanceChart from "@/pages/Components/AttendanceChart";
-import UpcomingTest from "./StudentSection/UpcomingTest";
+import UpcomingTest from "./UpcomingTest";
+import withAuth from "@/utils/withAuth";
 
 const HomePage = () => {
   const [AttendanceData, setAttendanceData] = useState([]);
@@ -57,4 +58,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default withAuth(HomePage, ["student"]);

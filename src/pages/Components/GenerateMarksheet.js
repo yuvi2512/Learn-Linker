@@ -13,6 +13,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import toast from "react-hot-toast";
+import withAuth from "@/utils/withAuth";
 
 const GenerateMarksheet = () => {
   const [selectedStudent, setSelectedStudent] = useState("");
@@ -204,4 +205,4 @@ const GenerateMarksheet = () => {
   );
 };
 
-export default GenerateMarksheet;
+export default withAuth(GenerateMarksheet, ["teacher"]);

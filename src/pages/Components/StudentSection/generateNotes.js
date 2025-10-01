@@ -11,8 +11,9 @@ import {
 import toast from "react-hot-toast";
 import axios from "axios";
 import { jsPDF } from "jspdf";
+import withAuth from "@/utils/withAuth";
 
-export default function Home() {
+ function Home() {
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
@@ -128,3 +129,5 @@ export default function Home() {
     </>
   );
 }
+
+export default withAuth(Home, ["student"]);
