@@ -278,48 +278,193 @@ const NavBar = () => {
         </Toolbar>
       </AppBar>
 
-      <Drawer anchor="left" open={drawerOpen} onClose={handleDrawerToggle}>
-        <Box
-          sx={{ width: 250 }}
-          role="presentation"
-          onClick={handleDrawerToggle}
-          onKeyDown={handleDrawerToggle}
-        >
-          <List>
-            {session?.user.role === "teacher" && (
-              <>
-                <ListItem button>
-                  <Link href="/Components/Attendance" passHref>
-                    <ListItemText primary="Attendance" />
-                  </Link>
-                </ListItem>
-                <ListItem button>
-                  <Link href="/Components/GenerateMarksheet" passHref>
-                    <ListItemText primary="Marksheet" />
-                  </Link>
-                </ListItem>
-              </>
-            )}
-            {session?.user.role === "student" && (
-              <>
-                <ListItem button>
-                  <Link href="/Components/studentHome" passHref>
-                    <ListItemText primary="Home" />
-                  </Link>
-                </ListItem>
-                <ListItem button>
-                  <Link href="/Components/StudentSection/Marksheet" passHref>
-                    <ListItemText primary="View Result" />
-                  </Link>
-                </ListItem>
-              </>
-            )}
-            <ListItem button onClick={handleLogout}>
-              <ListItemText primary="Logout" />
+<Drawer anchor="left" open={drawerOpen} onClose={handleDrawerToggle}>
+  <Box
+    sx={{
+      width: 260,
+      height: "100%",
+      background: "rgba(0,0,0,0.85)",
+      backdropFilter: "blur(12px)",
+      color: "white",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      p: 2,
+    }}
+    role="presentation"
+    onClick={handleDrawerToggle}
+    onKeyDown={handleDrawerToggle}
+  >
+    <List>
+      {/* Teacher Section */}
+      {session?.user.role === "teacher" && (
+        <>
+          <ListItem disablePadding>
+            <Link href="/Components/Attendance" passHref>
+              <Button
+                fullWidth
+                sx={{
+                  justifyContent: "flex-start",
+                  ...(isActive("/Components/Attendance") ? activeStyle : {}),
+                }}
+              >
+                📋 Attendance
+              </Button>
+            </Link>
+          </ListItem>
+          <ListItem disablePadding>
+            <Link href="/Components/GenerateMarksheet" passHref>
+              <Button
+                fullWidth
+                sx={{
+                  justifyContent: "flex-start",
+                  ...(isActive("/Components/GenerateMarksheet") ? activeStyle : {}),
+                }}
+              >
+                📝 Marksheet
+              </Button>
+            </Link>
+          </ListItem>
+          <ListItem disablePadding>
+            <Link href="/Components/Assignments" passHref>
+              <Button
+                fullWidth
+                sx={{
+                  justifyContent: "flex-start",
+                  ...(isActive("/Components/Assignments") ? activeStyle : {}),
+                }}
+              >
+                📚 Assignment
+              </Button>
+            </Link>
+          </ListItem>
+          <ListItem disablePadding>
+            <Link href="/Components/Test" passHref>
+              <Button
+                fullWidth
+                sx={{
+                  justifyContent: "flex-start",
+                  ...(isActive("/Components/Test") ? activeStyle : {}),
+                }}
+              >
+                🧪 Test
+              </Button>
+            </Link>
+          </ListItem>
+          {session?.user.email === "jayesh.surana@gmail.com" && (
+            <ListItem disablePadding>
+              <Link href="/Components/GenerateTimeTable" passHref>
+                <Button
+                  fullWidth
+                  sx={{
+                    justifyContent: "flex-start",
+                    ...(isActive("/Components/GenerateTimeTable") ? activeStyle : {}),
+                  }}
+                >
+                  📆 Generate Time Table
+                </Button>
+              </Link>
             </ListItem>
-          </List>
-        </Box>
-      </Drawer>
+          )}
+        </>
+      )}
+
+      {/* Student Section */}
+      {session?.user.role === "student" && (
+        <>
+          <ListItem disablePadding>
+            <Link href="/Components/studentHome" passHref>
+              <Button
+                fullWidth
+                sx={{
+                  justifyContent: "flex-start",
+                  ...(isActive("/Components/studentHome") ? activeStyle : {}),
+                }}
+              >
+                🏠 Home
+              </Button>
+            </Link>
+          </ListItem>
+          <ListItem disablePadding>
+            <Link href="/Components/StudentSection/Marksheet" passHref>
+              <Button
+                fullWidth
+                sx={{
+                  justifyContent: "flex-start",
+                  ...(isActive("/Components/StudentSection/Marksheet") ? activeStyle : {}),
+                }}
+              >
+                📊 View Result
+              </Button>
+            </Link>
+          </ListItem>
+          <ListItem disablePadding>
+            <Link href="/Components/StudentSection/Assignment" passHref>
+              <Button
+                fullWidth
+                sx={{
+                  justifyContent: "flex-start",
+                  ...(isActive("/Components/StudentSection/Assignment") ? activeStyle : {}),
+                }}
+              >
+                📚 Assignment
+              </Button>
+            </Link>
+          </ListItem>
+          <ListItem disablePadding>
+            <Link href="/Components/StudentSection/generateNotes" passHref>
+              <Button
+                fullWidth
+                sx={{
+                  justifyContent: "flex-start",
+                  ...(isActive("/Components/StudentSection/generateNotes") ? activeStyle : {}),
+                }}
+              >
+                ✍️ Generate Notes
+              </Button>
+            </Link>
+          </ListItem>
+        </>
+      )}
+
+      {/* Common Section */}
+      <ListItem disablePadding>
+        <Link href="/Components/ShowTimeTable" passHref>
+          <Button
+            fullWidth
+            sx={{
+              justifyContent: "flex-start",
+              ...(isActive("/Components/ShowTimeTable") ? activeStyle : {}),
+            }}
+          >
+            📅 Show Time Table
+          </Button>
+        </Link>
+      </ListItem>
+    </List>
+
+    {/* Logout Button */}
+    <Box sx={{ p: 1 }}>
+      <Button
+        variant="outlined"
+        fullWidth
+        sx={{
+          borderColor: "#00BFFF",
+          color: "white",
+          "&:hover": {
+            background: "rgba(0,191,255,0.2)",
+            borderColor: "#00BFFF",
+            transform: "translateY(-2px)",
+          },
+        }}
+        onClick={handleLogout}
+      >
+        🚪 Logout
+      </Button>
+    </Box>
+  </Box>
+</Drawer>
+
     </>
   );
 };
