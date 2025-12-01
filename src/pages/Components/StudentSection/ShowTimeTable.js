@@ -157,4 +157,4 @@ const ShowTimeTable = () => {
   );
 };
 
-export default withAuth(ShowTimeTable, ["student"]);
+export default withAuth(ShowTimeTable, ["student","teacher"]);

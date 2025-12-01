@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     let generatedNotes = "";
     let continuationPrompt = "";
 
-    // We'll loop twice to generate notes in chunks
+   
     for (let i = 0; i < 2; i++) {
       const continuationText = continuationPrompt.trim()
         ? ` Continue from where the previous content left off: ${continuationPrompt.trim()}`
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
 
       generatedNotes += newText + "\n\n";
 
-      // Keep last 500 characters as continuation context
+      
       continuationPrompt = newText.slice(-500);
     }
 
