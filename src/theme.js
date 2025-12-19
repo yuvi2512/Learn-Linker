@@ -55,8 +55,7 @@ const theme = createTheme({
     },
     MuiButton: {
       styleOverrides: {
-        root: {
-          borderRadius: 24, // Circular edges for buttons
+        root: { // Circular edges for buttons
           padding: "8px 24px", // Extra padding for a rounded, pill-shaped look
           boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)", // Soft shadow
           textTransform: "none", // Remove uppercase transformation for a cleaner look

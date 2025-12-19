@@ -1,29 +1,36 @@
 "use client";
 import NavBar from "@/pages/Components/navBar.js";
 import LoggedInNav from "@/pages/Components/LoggedInNav";
-import { useState, useEffect } from "react";
 import { SessionProvider, useSession } from "next-auth/react";
- import "../app/globals.css";
+import "../app/globals.css";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import theme from "../theme";
+import { Box, CircularProgress } from "@mui/material";
 
 function AuthWrapper({ Component, pageProps }) {
-  const [LoggedIn, setLoggedIn] = useState(false);
-  const { data: sessionData } = useSession();
+  const { data: sessionData, status } = useSession();
 
-  useEffect(() => {
-    if (sessionData?.user) {
-      setLoggedIn(true);
-    } else {
-      setLoggedIn(false);
-    }
-  }, [sessionData]);
+  if (status === "loading") {
+    return (
+      <Box
+        sx={{
+          height: "100vh",
+          width: "100vw",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <>
-      {LoggedIn ? <LoggedInNav /> : <NavBar />}
+      {sessionData ? <LoggedInNav /> : <NavBar />}
       <Component {...pageProps} />
     </>
   );

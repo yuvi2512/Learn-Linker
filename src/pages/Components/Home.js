@@ -185,9 +185,9 @@ export default function Home() {
               "📚 Manage Courses",
               "📈 Track Student Progress",
               "📝 Create Assignments",
-              "🎓 Teacher & Student Dashboards",
+              "🎓 User Dashboards",
               "📊 Test & Marks Management",
-              "⚡ Real-Time Performance Insights",
+              "⚡ Performance Insights",
             ].map((feature, index) => (
               <Grid item xs={12} sm={6} md={4} key={index}>
                 <motion.div
