@@ -40,6 +40,8 @@ const NavButton = memo(({ href, active, children }) => (
   </Link>
 ));
 
+NavButton.displayName = "NavButton";
+
 const NavBar = () => {
   const { data: session } = useSession();
   const pathname = usePathname();
