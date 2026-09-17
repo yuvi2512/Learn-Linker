@@ -25,8 +25,73 @@ Open [http://localhost:3000](http://localhost:3000).
 | `DATABASE_URL` | Postgres connection string. |
 | `NEXTAUTH_SECRET` | Signs the session cookie. |
 
+If `DATABASE_URL` is missing, the app uses local Postgres at
+`localhost:5432/learnlinker`. If `NEXTAUTH_URL` is missing, it uses the Vercel
+deployment URL when hosted, otherwise `http://localhost:3000`.
+
 `TEACHER_INVITE_CODE` is required before any teacher account can be created —
 see below.
+
+## Hosting on Vercel + Neon
+
+The Next.js app (pages **and** `/api` routes) deploys as one Vercel project.
+Neon is only the Postgres database.
+
+### 1. Neon — create the tables
+
+1. In the [Neon console](https://console.neon.tech), open your project.
+2. Copy two connection strings from **Dashboard → Connection details**:
+   - **Pooled** (host contains `-pooler`) — this is `DATABASE_URL` for the app.
+   - **Direct** (no `-pooler`) — this is `DATABASE_URL_UNPOOLED` for migrations.
+3. Both URIs should include `?sslmode=require`.
+4. From this repo, put the Neon URI in `.env.local` as `DATABASE_URL` (and
+   optionally `DATABASE_URL_UNPOOLED`), then apply the same schema as local:
+
+```bash
+npm run db:migrate
+```
+
+That runs `db/migrations/001` through `004` in order and records them in
+`schema_migrations`. Re-running is safe.
+
+You can confirm in Neon **SQL Editor**:
+
+```sql
+SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY 1;
+SELECT name, applied_at FROM schema_migrations ORDER BY applied_at;
+```
+
+You should see `users`, `batches`, `batch_students`, `batch_teachers`,
+`attendance`, `student_marks`, `assignments`, `assignment_submissions`,
+`upcoming_tests`, `schedule`, `invite_codes`, and `schema_migrations`.
+
+Vercel also runs `npm run db:migrate` during deploy (`vercel-build`), so a
+brand-new Neon database gets the tables automatically on the first deploy.
+
+### 2. Vercel — environment variables
+
+In the Vercel project: **Settings → Environment Variables**. Add these for
+**Production** (and Preview if you use it). Check that they are available at
+**Build** time as well as Runtime, because migrations run during the build.
+
+| Name | Value | Required |
+| --- | --- | --- |
+| `DATABASE_URL` | Neon **pooled** URI, e.g. `postgresql://…@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require` | yes |
+| `DATABASE_URL_UNPOOLED` | Neon **direct** URI (no `-pooler`) | recommended |
+| `NEXTAUTH_SECRET` | Same secret as `.env.local`. Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` | yes |
+| `NEXTAUTH_URL` | Your live site, e.g. `https://your-app.vercel.app` (no trailing slash) | yes on production |
+| `TEACHER_INVITE_CODE` | Bootstrap code for the first admin at `/register/teacher` | yes until an admin exists |
+| `COHERE_API_KEY` | Only if you use AI notes / test paper | no |
+
+Do **not** set `DATABASE_URL` to `localhost` on Vercel. Leave it unset only on
+your machine — that is when the localhost fallback applies.
+
+After saving variables, **Redeploy** so the build picks them up.
+
+### 3. First login on production
+
+Open `https://your-app.vercel.app/register/teacher`, use `TEACHER_INVITE_CODE`,
+and create the admin. Then add teachers from **Invites**.
 
 ## Database
 

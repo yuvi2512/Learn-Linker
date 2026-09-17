@@ -1,6 +1,9 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import User from "@/models/user";
 import bcrypt from "bcryptjs";
+import runtimeConfig from "../../lib/runtimeConfig";
+
+const appUrl = runtimeConfig.ensureAppUrl();
 
 /**
  * JWT signing key. Must be the same string in every webpack chunk.
@@ -87,5 +90,5 @@ export const authOptions = {
   },
   secret: authSecret(),
   // HTTP localhost must not get Secure cookies or the browser will drop them.
-  useSecureCookies: process.env.NEXTAUTH_URL?.startsWith("https://") ?? false,
+  useSecureCookies: appUrl.startsWith("https://"),
 };

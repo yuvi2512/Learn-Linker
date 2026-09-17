@@ -5,56 +5,39 @@
  *
  * Each file runs inside a transaction and is recorded in schema_migrations, so
  * re-running the command is a no-op.
+ *
+ * On Vercel this also runs during `vercel-build` so a fresh Neon database
+ * gets the same tables as local.
  */
 const fs = require("fs");
 const path = require("path");
 const { Client } = require("pg");
 const { loadEnvConfig } = require("@next/env");
+const {
+  resolveMigrationDatabaseUrl,
+  sslConfig,
+  isUsingLocalDatabaseFallback,
+  databaseHostLabel,
+} = require("../lib/runtimeConfig");
 
 loadEnvConfig(process.cwd());
 
 const MIGRATIONS_DIR = path.join(__dirname, "..", "db", "migrations");
 
-/**
- * Local Postgres (and most Docker images) do not speak SSL. Managed hosts
- * usually require it. Honour sslmode in the URL when present; otherwise skip
- * SSL for loopback and enable it everywhere else in production.
- */
-function sslConfig(databaseUrl) {
-  const sslmode = (String(databaseUrl).match(/[?&]sslmode=([^&]+)/i) || [])[1];
-
-  if (sslmode === "disable") return false;
-  if (sslmode === "require" || sslmode === "verify-ca" || sslmode === "verify-full") {
-    return {
-      rejectUnauthorized: sslmode !== "require",
-      ca: process.env.VERCEL_POSTGRES_CA_CERT,
-    };
-  }
-
-  let host = "";
-  try {
-    host = new URL(databaseUrl.replace(/^postgres(ql)?:/i, "http:")).hostname;
-  } catch {
-    host = "";
-  }
-
-  const local = host === "localhost" || host === "127.0.0.1" || host === "::1";
-  if (local || process.env.NODE_ENV !== "production") return false;
-
-  return {
-    rejectUnauthorized: false,
-    ca: process.env.VERCEL_POSTGRES_CA_CERT,
-  };
-}
-
 async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
-
-  if (!databaseUrl) {
+  if (process.env.VERCEL && isUsingLocalDatabaseFallback()) {
     console.error(
-      "DATABASE_URL is not set. Add it to .env.local (see .env.example) and try again."
+      "DATABASE_URL is not set on Vercel. Add the Neon connection string in Project Settings → Environment Variables, then redeploy."
     );
     process.exit(1);
+  }
+
+  const databaseUrl = resolveMigrationDatabaseUrl();
+
+  if (isUsingLocalDatabaseFallback()) {
+    console.warn(
+      "No hosted DATABASE_URL found. Falling back to local Postgres at localhost:5432/learnlinker."
+    );
   }
 
   const files = fs
@@ -66,6 +49,8 @@ async function main() {
     console.log("No migrations found.");
     return;
   }
+
+  console.log(`Migrating ${databaseHostLabel(databaseUrl)}`);
 
   const client = new Client({
     connectionString: databaseUrl,

@@ -1,3 +1,9 @@
+const { ensureAppUrl } = require("./lib/runtimeConfig");
+
+// NextAuth reads NEXTAUTH_URL. On Vercel that is the deployment URL; locally
+// it falls back to http://localhost:3000 when the env var is missing.
+ensureAppUrl();
+
 /** @type {import('next').NextConfig} */
 
 // The app used to route through /Components/*; keep old links working.
