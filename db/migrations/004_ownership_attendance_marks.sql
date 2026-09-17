@@ -21,9 +21,31 @@ SELECT b.id, u.id
 ON CONFLICT DO NOTHING;
 
 -- --- Attendance: boolean presence, live student name via FK, drop the twin columns.
+-- Older databases stored student_id as text; users.id is uuid. Cast before
+-- comparing, then convert the column so the FK can be added.
 
 DELETE FROM public.attendance a
- WHERE NOT EXISTS (SELECT 1 FROM public.users u WHERE u.id = a.student_id);
+ WHERE NOT EXISTS (
+         SELECT 1 FROM public.users u WHERE u.id::text = a.student_id::text
+       );
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+      FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND table_name = 'attendance'
+       AND column_name = 'student_id'
+       AND data_type IN ('text', 'character varying')
+  ) THEN
+    DELETE FROM public.attendance
+     WHERE student_id IS NULL
+        OR student_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+    ALTER TABLE public.attendance
+      ALTER COLUMN student_id TYPE uuid USING student_id::uuid;
+  END IF;
+END $$;
 
 DO $$
 BEGIN
@@ -67,7 +89,27 @@ CREATE INDEX IF NOT EXISTS attendance_batch_date_idx
 -- --- Marks: one score per student/subject (or per test), names live via FK.
 
 DELETE FROM public.student_marks m
- WHERE NOT EXISTS (SELECT 1 FROM public.users u WHERE u.id = m.student_id);
+ WHERE NOT EXISTS (
+         SELECT 1 FROM public.users u WHERE u.id::text = m.student_id::text
+       );
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+      FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND table_name = 'student_marks'
+       AND column_name = 'student_id'
+       AND data_type IN ('text', 'character varying')
+  ) THEN
+    DELETE FROM public.student_marks
+     WHERE student_id IS NULL
+        OR student_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+    ALTER TABLE public.student_marks
+      ALTER COLUMN student_id TYPE uuid USING student_id::uuid;
+  END IF;
+END $$;
 
 DELETE FROM public.student_marks a
  USING public.student_marks b
