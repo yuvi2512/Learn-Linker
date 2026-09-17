@@ -10,6 +10,9 @@ import MarketingNav from "@/components/layout/MarketingNav";
 import AppShell from "@/components/layout/AppShell";
 import theme from "../theme";
 import "../styles/globals.css";
+import axios from "axios";
+
+axios.defaults.withCredentials = true;
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -104,7 +107,7 @@ export default function MyApp({ Component, pageProps: { session, ...pageProps } 
               },
             }}
           />
-          <SessionProvider session={session}>
+          <SessionProvider session={session} refetchOnWindowFocus>
             <Layout Component={Component} pageProps={pageProps} />
           </SessionProvider>
         </ThemeProvider>
