@@ -121,7 +121,7 @@ DELETE FROM public.student_marks a
 ALTER TABLE public.student_marks DROP COLUMN IF EXISTS student_name;
 
 ALTER TABLE public.student_marks
-  ADD COLUMN IF NOT EXISTS test_id uuid REFERENCES public.upcoming_tests(id) ON DELETE CASCADE;
+  ADD COLUMN IF NOT EXISTS test_id integer REFERENCES public.upcoming_tests(id) ON DELETE CASCADE;
 
 ALTER TABLE public.student_marks
   ADD COLUMN IF NOT EXISTS max_marks numeric NOT NULL DEFAULT 100;

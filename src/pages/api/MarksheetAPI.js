@@ -60,7 +60,7 @@ async function listScores(req, res, user) {
                   NULL::numeric AS marks_obtained,
                   NULL::numeric AS max_marks,
                   NULL::text AS subject_name,
-                  NULL::uuid AS test_id
+                  NULL::integer AS test_id
              FROM public.batch_students bs
              JOIN public.users u ON u.id = bs.student_id
             WHERE bs.batch_id = $1
