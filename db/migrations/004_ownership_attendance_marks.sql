@@ -59,7 +59,9 @@ BEGIN
   ) THEN
     ALTER TABLE public.attendance ADD COLUMN IF NOT EXISTS present_new boolean;
     UPDATE public.attendance
-       SET present_new = (lower(coalesce(present, '')) IN ('true', 't', '1', 'yes'));
+       SET present_new = (
+         lower(coalesce(present::text, '')) IN ('true', 't', '1', 'yes')
+       );
     ALTER TABLE public.attendance DROP COLUMN present;
     ALTER TABLE public.attendance RENAME COLUMN present_new TO present;
   END IF;
@@ -194,7 +196,16 @@ SELECT s.batch_id,
   FROM public.schedule s
   CROSS JOIN LATERAL generate_series(
     1,
-    GREATEST(1, LEAST(COALESCE(s.classesperweek, 1), 6))
+    GREATEST(
+      1,
+      LEAST(
+        COALESCE(
+          NULLIF(regexp_replace(s.classesperweek::text, '[^0-9]', '', 'g'), '')::integer,
+          1
+        ),
+        6
+      )
+    )
   ) AS gs
  WHERE s.day_of_week IS NULL;
 
