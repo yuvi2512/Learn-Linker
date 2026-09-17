@@ -15,6 +15,38 @@ loadEnvConfig(process.cwd());
 
 const MIGRATIONS_DIR = path.join(__dirname, "..", "db", "migrations");
 
+/**
+ * Local Postgres (and most Docker images) do not speak SSL. Managed hosts
+ * usually require it. Honour sslmode in the URL when present; otherwise skip
+ * SSL for loopback and enable it everywhere else in production.
+ */
+function sslConfig(databaseUrl) {
+  const sslmode = (String(databaseUrl).match(/[?&]sslmode=([^&]+)/i) || [])[1];
+
+  if (sslmode === "disable") return false;
+  if (sslmode === "require" || sslmode === "verify-ca" || sslmode === "verify-full") {
+    return {
+      rejectUnauthorized: sslmode !== "require",
+      ca: process.env.VERCEL_POSTGRES_CA_CERT,
+    };
+  }
+
+  let host = "";
+  try {
+    host = new URL(databaseUrl.replace(/^postgres(ql)?:/i, "http:")).hostname;
+  } catch {
+    host = "";
+  }
+
+  const local = host === "localhost" || host === "127.0.0.1" || host === "::1";
+  if (local || process.env.NODE_ENV !== "production") return false;
+
+  return {
+    rejectUnauthorized: false,
+    ca: process.env.VERCEL_POSTGRES_CA_CERT,
+  };
+}
+
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
 
@@ -37,9 +69,7 @@ async function main() {
 
   const client = new Client({
     connectionString: databaseUrl,
-    ssl: /\bsslmode=disable\b/.test(databaseUrl)
-      ? false
-      : { rejectUnauthorized: false, ca: process.env.VERCEL_POSTGRES_CA_CERT },
+    ssl: sslConfig(databaseUrl),
   });
 
   await client.connect();
