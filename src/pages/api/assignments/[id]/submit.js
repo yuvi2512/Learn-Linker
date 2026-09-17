@@ -1,4 +1,4 @@
-import { pool } from "../../../../lib/db";
+import { pool } from "../../../../../lib/db";
 import { requireUser, methodNotAllowed } from "@/utils/apiAuth";
 import { isStudentInBatch } from "@/utils/batches";
 
