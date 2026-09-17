@@ -39,6 +39,16 @@ export async function studentBatchIds(client, studentId) {
   return rows.map((row) => row.batch_id);
 }
 
+/** Batch ids a teacher is assigned to. Admins do not need this — they see all. */
+export async function teacherBatchIds(client, teacherId) {
+  const { rows } = await client.query(
+    "SELECT batch_id FROM public.batch_teachers WHERE teacher_id = $1",
+    [teacherId]
+  );
+
+  return rows.map((row) => row.batch_id);
+}
+
 /** True when the student is on the roll for that batch. */
 export async function isStudentInBatch(client, studentId, batchId) {
   const { rowCount } = await client.query(
@@ -51,6 +61,17 @@ export async function isStudentInBatch(client, studentId, batchId) {
   return rowCount > 0;
 }
 
+export async function isTeacherOnBatch(client, teacherId, batchId) {
+  const { rowCount } = await client.query(
+    `SELECT 1
+       FROM public.batch_teachers
+      WHERE teacher_id = $1 AND batch_id = $2`,
+    [teacherId, batchId]
+  );
+
+  return rowCount > 0;
+}
+
 export async function batchExists(client, batchId) {
   const { rowCount } = await client.query(
     "SELECT 1 FROM public.batches WHERE id = $1",
@@ -58,4 +79,32 @@ export async function batchExists(client, batchId) {
   );
 
   return rowCount > 0;
+}
+
+/**
+ * Teachers only see batches they are assigned to. Admins see every batch.
+ * Responds 403/404 and returns false when the caller should stop.
+ */
+export async function requireBatchAccess(client, user, batchId, res) {
+  if (!(await batchExists(client, batchId))) {
+    res.status(404).json({ message: "That batch no longer exists." });
+    return false;
+  }
+
+  if (user?.role === "admin") return true;
+
+  if (user?.role === "teacher") {
+    if (await isTeacherOnBatch(client, user.id, batchId)) return true;
+    res.status(403).json({ message: "You are not assigned to that batch." });
+    return false;
+  }
+
+  if (user?.role === "student") {
+    if (await isStudentInBatch(client, user.id, batchId)) return true;
+    res.status(403).json({ message: "You are not in that batch." });
+    return false;
+  }
+
+  res.status(403).json({ message: "You do not have access to that batch." });
+  return false;
 }

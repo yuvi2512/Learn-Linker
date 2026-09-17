@@ -1,8 +1,3 @@
-const allowlist = (process.env.NEXT_PUBLIC_TIMETABLE_ADMINS || "")
-  .split(",")
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
-
 export function isAdmin(user) {
   return user?.role === "admin";
 }
@@ -23,13 +18,12 @@ export function hasAllowedRole(role, allowedRoles = []) {
   return false;
 }
 
-/**
- * Timetable publishing overwrites the whole grid, so it can be limited to
- * named teachers via NEXT_PUBLIC_TIMETABLE_ADMINS. With no allowlist set,
- * any teacher may publish. Admins always can.
- */
+/** Creating, editing, deleting batches and assigning faculty. */
+export function canManageBatches(user) {
+  return isAdmin(user);
+}
+
+/** Publishing the weekly grid overwrites a batch timetable. Admin only. */
 export function canBuildTimetable(user) {
-  if (!isStaff(user)) return false;
-  if (isAdmin(user) || allowlist.length === 0) return true;
-  return allowlist.includes(String(user.email || "").toLowerCase());
+  return isAdmin(user);
 }

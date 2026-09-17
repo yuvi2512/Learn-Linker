@@ -98,5 +98,6 @@ nothing is lost on upgrade.
 
 - `withAuth(Component, roles)` guards pages.
 - `requireUser(req, res, roles)` guards API routes.
-- `NEXT_PUBLIC_TIMETABLE_ADMINS` optionally narrows timetable publishing to
-  named teachers.
+- Only the institute **admin** can create/edit batches, assign teachers, and
+  publish the timetable. Teachers see and operate on the batches they are
+  assigned to.

@@ -36,7 +36,6 @@ const DRAWER_WIDTH = 268;
 
 const teacherLinks = [
   { href: "/dashboard", label: "Overview", icon: SpaceDashboardOutlinedIcon },
-  { href: "/batches", label: "Batches", icon: GroupsOutlinedIcon },
   { href: "/attendance", label: "Attendance", icon: HowToRegOutlinedIcon },
   { href: "/results", label: "Results", icon: AssessmentOutlinedIcon },
   { href: "/assignments", label: "Assignments", icon: AssignmentOutlinedIcon },
@@ -183,6 +182,11 @@ export default function AppShell({ children }) {
     const items = [...teacherLinks];
 
     if (isAdmin(session.user)) {
+      items.splice(1, 0, {
+        href: "/batches",
+        label: "Batches",
+        icon: GroupsOutlinedIcon,
+      });
       items.splice(2, 0, {
         href: "/invites",
         label: "Invites",

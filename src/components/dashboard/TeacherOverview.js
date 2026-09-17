@@ -30,7 +30,6 @@ import { isPresent } from "@/utils/attendance";
 import { isAdmin } from "@/utils/permissions";
 
 const quickActions = [
-  { href: "/batches", label: "Manage batches", icon: GroupsOutlinedIcon },
   { href: "/attendance", label: "Take attendance", icon: HowToRegOutlinedIcon },
   { href: "/assignments", label: "New assignment", icon: AssignmentOutlinedIcon },
   { href: "/tests", label: "Schedule test", icon: QuizOutlinedIcon },
@@ -161,6 +160,7 @@ export default function TeacherOverview() {
           onChange={setBatchId}
           allowAll
           allLabel="All batches"
+          canCreate={isAdmin(session?.user)}
           helperText=" "
           sx={{ minWidth: 220 }}
         />
@@ -180,16 +180,21 @@ export default function TeacherOverview() {
           >
             <Box>
               <Typography variant="h6" sx={{ mb: 0.5 }}>
-                Start by creating a batch
+                {isAdmin(session?.user)
+                  ? "Start by creating a batch"
+                  : "No batches assigned yet"}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Attendance, results, and timetables are all scoped to a batch, so
-                you need at least one before you can mark a class.
+                {isAdmin(session?.user)
+                  ? "Attendance, results, and timetables are all scoped to a batch. Assign teachers after you create one."
+                  : "Ask your institute admin to add you to a class. You will only see the batches they assign you."}
               </Typography>
             </Box>
-            <Button component={Link} href="/batches" variant="contained">
-              Create a batch
-            </Button>
+            {isAdmin(session?.user) && (
+              <Button component={Link} href="/batches" variant="contained">
+                Create a batch
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
@@ -247,6 +252,11 @@ export default function TeacherOverview() {
                 {[
                   ...(isAdmin(session?.user)
                     ? [
+                        {
+                          href: "/batches",
+                          label: "Manage batches",
+                          icon: GroupsOutlinedIcon,
+                        },
                         {
                           href: "/invites",
                           label: "Invite a teacher",

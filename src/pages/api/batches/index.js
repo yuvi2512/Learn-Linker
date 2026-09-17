@@ -1,5 +1,35 @@
 import { pool } from "../../../../lib/db";
 import { requireUser, methodNotAllowed } from "@/utils/apiAuth";
+import { isAdmin } from "@/utils/permissions";
+
+const TEACHERS_JSON = `
+  COALESCE(
+    (
+      SELECT json_agg(
+               json_build_object('id', u.id, 'name', u.name)
+               ORDER BY u.name
+             )
+        FROM public.batch_teachers bt
+        JOIN public.users u ON u.id = bt.teacher_id
+       WHERE bt.batch_id = b.id
+    ),
+    '[]'::json
+  ) AS teachers
+`;
+
+const ADMIN_LIST = `
+  SELECT b.id,
+         b.name,
+         b.subject,
+         b.description,
+         b.created_at,
+         COUNT(bs.student_id)::int AS student_count,
+         ${TEACHERS_JSON}
+    FROM public.batches b
+    LEFT JOIN public.batch_students bs ON bs.batch_id = b.id
+   GROUP BY b.id
+   ORDER BY b.name ASC
+`;
 
 const TEACHER_LIST = `
   SELECT b.id,
@@ -7,21 +37,24 @@ const TEACHER_LIST = `
          b.subject,
          b.description,
          b.created_at,
-         COUNT(bs.student_id)::int AS student_count
+         COUNT(bs.student_id)::int AS student_count,
+         ${TEACHERS_JSON}
     FROM public.batches b
+    JOIN public.batch_teachers mine
+      ON mine.batch_id = b.id AND mine.teacher_id = $1
     LEFT JOIN public.batch_students bs ON bs.batch_id = b.id
    GROUP BY b.id
    ORDER BY b.name ASC
 `;
 
-// A student only ever learns about the batches they are on the roll for.
 const STUDENT_LIST = `
   SELECT b.id,
          b.name,
          b.subject,
          b.description,
          b.created_at,
-         COUNT(peers.student_id)::int AS student_count
+         COUNT(peers.student_id)::int AS student_count,
+         ${TEACHERS_JSON}
     FROM public.batches b
     JOIN public.batch_students mine
       ON mine.batch_id = b.id AND mine.student_id = $1
@@ -37,7 +70,9 @@ async function listBatches(user, res) {
     const result =
       user.role === "student"
         ? await client.query(STUDENT_LIST, [user.id])
-        : await client.query(TEACHER_LIST);
+        : isAdmin(user)
+        ? await client.query(ADMIN_LIST)
+        : await client.query(TEACHER_LIST, [user.id]);
 
     res.status(200).json(result.rows);
   } finally {
@@ -46,7 +81,7 @@ async function listBatches(user, res) {
 }
 
 async function createBatch(req, res, user) {
-  const { name, subject, description } = req.body || {};
+  const { name, subject, description, teacherIds } = req.body || {};
 
   if (!name || !String(name).trim()) {
     return res.status(400).json({ message: "A batch needs a name." });
@@ -55,6 +90,8 @@ async function createBatch(req, res, user) {
   const client = await pool.connect();
 
   try {
+    await client.query("BEGIN");
+
     const { rows } = await client.query(
       `INSERT INTO public.batches (name, subject, description, created_by)
        VALUES ($1, $2, $3, $4)
@@ -67,8 +104,25 @@ async function createBatch(req, res, user) {
       ]
     );
 
-    res.status(201).json({ ...rows[0], student_count: 0 });
+    const batch = rows[0];
+    const assigned = Array.isArray(teacherIds)
+      ? [...new Set(teacherIds.filter(Boolean).map(String))]
+      : [];
+
+    if (assigned.length > 0) {
+      await client.query(
+        `INSERT INTO public.batch_teachers (batch_id, teacher_id)
+         SELECT $1, id FROM public.users
+          WHERE id = ANY($2::uuid[]) AND role IN ('teacher', 'admin')
+         ON CONFLICT DO NOTHING`,
+        [batch.id, assigned]
+      );
+    }
+
+    await client.query("COMMIT");
+    res.status(201).json({ ...batch, student_count: 0, teachers: [] });
   } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
     if (error.code === "23505") {
       return res
         .status(409)
@@ -89,7 +143,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      const user = await requireUser(req, res, ["teacher"]);
+      const user = await requireUser(req, res, ["admin"]);
       if (!user) return;
       return await createBatch(req, res, user);
     }

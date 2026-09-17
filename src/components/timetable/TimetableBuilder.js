@@ -10,6 +10,8 @@ import {
   Typography,
   Box,
   Alert,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
@@ -19,31 +21,43 @@ import PageShell from "@/components/layout/PageShell";
 import BatchPicker from "@/components/batches/BatchPicker";
 import { useBatchSelection } from "@/hooks/useBatches";
 import { ALL_BATCHES } from "@/utils/batches";
-
-const timeSlots = [
-  "8-9 AM",
-  "9-10 AM",
-  "10-11 AM",
-  "11-12 PM",
-  "12-1 PM",
-  "2-3 PM",
-  "3-4 PM",
-];
+import { WEEKDAYS, TIME_SLOTS } from "@/utils/timetable";
 
 const emptyRow = {
   subject: "",
   teacherId: "",
-  classesPerWeek: "",
   timeSlot: "",
+  days: [],
 };
 
+function groupPeriods(rows) {
+  const map = new Map();
+
+  rows.forEach((row) => {
+    const key = `${row.subject}|${row.teacher_id}|${row.timeslot}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        subject: row.subject || "",
+        teacherId: row.teacher_id || "",
+        timeSlot: row.timeslot || "",
+        days: [],
+      });
+    }
+    map.get(key).days.push(Number(row.day_of_week));
+  });
+
+  return [...map.values()].map((row) => ({
+    ...row,
+    days: [...new Set(row.days)].sort((a, b) => a - b),
+  }));
+}
+
 export default function TimetableBuilder() {
-  // A NULL batch is the institute-wide grid every batch falls back to.
   const { batches, loading: batchesLoading, batchId, setBatchId, selected } =
     useBatchSelection({ allowAll: true });
 
   const [teachers, setTeachers] = useState([]);
-  const [subjects, setSubjects] = useState([{ ...emptyRow }]);
+  const [periods, setPeriods] = useState([{ ...emptyRow }]);
   const [saving, setSaving] = useState(false);
   const [loadingGrid, setLoadingGrid] = useState(false);
 
@@ -52,9 +66,7 @@ export default function TimetableBuilder() {
 
     (async () => {
       try {
-        const response = await axios.get("/api/AttendanceAPI", {
-          params: { service: "GETTEACHERS" },
-        });
+        const response = await axios.get("/api/teachers");
         if (!cancelled && Array.isArray(response.data)) setTeachers(response.data);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -67,8 +79,6 @@ export default function TimetableBuilder() {
     };
   }, []);
 
-  // Load whatever is already published for this batch, so publishing edits the
-  // existing grid instead of starting from a blank one.
   useEffect(() => {
     let cancelled = false;
 
@@ -81,16 +91,8 @@ export default function TimetableBuilder() {
 
         if (cancelled) return;
 
-        const existing = (Array.isArray(response.data) ? response.data : []).map(
-          (row) => ({
-            subject: row.subject || "",
-            teacherId: row.teachername || "",
-            classesPerWeek: String(row.classesperweek ?? ""),
-            timeSlot: row.timeslot || "",
-          })
-        );
-
-        setSubjects(existing.length > 0 ? existing : [{ ...emptyRow }]);
+        const grouped = groupPeriods(Array.isArray(response.data) ? response.data : []);
+        setPeriods(grouped.length > 0 ? grouped : [{ ...emptyRow }]);
       } catch (error) {
         console.error("Error loading timetable:", error);
         if (!cancelled) toast.error("Could not load the current timetable.");
@@ -104,33 +106,27 @@ export default function TimetableBuilder() {
     };
   }, [batchId]);
 
-  const handleChange = (index, event) => {
-    const { name, value } = event.target;
-    setSubjects((prev) =>
-      prev.map((subject, i) => (i === index ? { ...subject, [name]: value } : subject))
+  const handleChange = (index, field, value) => {
+    setPeriods((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
     );
   };
-
-  const handleAddRow = () => setSubjects([...subjects, { ...emptyRow }]);
-
-  const handleRemoveRow = (index) =>
-    setSubjects(subjects.filter((_, i) => i !== index));
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const incomplete = subjects.some(
-      (row) => !row.subject || !row.teacherId || !row.classesPerWeek || !row.timeSlot
+    const incomplete = periods.some(
+      (row) => !row.subject || !row.teacherId || !row.timeSlot || row.days.length === 0
     );
     if (incomplete) {
-      toast.error("Fill in every field before publishing.");
+      toast.error("Fill in every field and pick the weekdays for each period.");
       return;
     }
 
     setSaving(true);
     try {
       const response = await axios.post("/api/TimeTableAPI", {
-        timetable: subjects,
+        periods,
         batchId: batchId === ALL_BATCHES ? null : batchId,
       });
       if (response.status === 200) {
@@ -147,11 +143,11 @@ export default function TimetableBuilder() {
   return (
     <PageShell
       title="Build timetable"
-      subtitle="Add subjects, teachers, weekly load, and a preferred slot for one batch."
+      subtitle="Choose the exact weekdays for each class. Publishing replaces this batch’s grid."
     >
       <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
-        Publishing replaces this batch&apos;s timetable only, so include every period
-        you want it to show. Other batches keep their own grid.
+        Pick Monday / Wednesday / Friday yourself — the grid no longer spreads
+        classes across random days.
       </Alert>
 
       <Card>
@@ -163,6 +159,7 @@ export default function TimetableBuilder() {
               value={batchId}
               onChange={setBatchId}
               allowAll
+              canCreate
               label="Timetable for"
               allLabel="All students (shared grid)"
               helperText={
@@ -176,74 +173,91 @@ export default function TimetableBuilder() {
           <Typography variant="subtitle2" sx={{ mb: 1.5, color: "text.secondary" }}>
             Periods
           </Typography>
-          <Stack spacing={2}>
-            {subjects.map((subjectRow, index) => (
+          <Stack spacing={2.5}>
+            {periods.map((row, index) => (
               <Box
                 key={index}
                 sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr",
-                    md: "1.2fr 1.2fr 0.8fr 1fr 48px",
-                  },
-                  gap: 1.5,
-                  alignItems: "center",
-                  p: { xs: 1.5, md: 0 },
-                  border: { xs: "1px solid", md: "none" },
-                  borderColor: { xs: "divider" },
+                  p: 2,
+                  border: "1px solid",
+                  borderColor: "divider",
                   borderRadius: 2,
                 }}
               >
-                <TextField
-                  fullWidth
-                  label="Subject"
-                  name="subject"
-                  value={subjectRow.subject}
-                  onChange={(event) => handleChange(index, event)}
-                />
-                <TextField
-                  select
-                  fullWidth
-                  label="Teacher"
-                  name="teacherId"
-                  value={subjectRow.teacherId}
-                  onChange={(event) => handleChange(index, event)}
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      md: "1.2fr 1.2fr 1fr 48px",
+                    },
+                    gap: 1.5,
+                    alignItems: "center",
+                    mb: 1.5,
+                  }}
                 >
-                  {teachers.map((teacher) => (
-                    <MenuItem key={teacher.id || teacher.name} value={teacher.name}>
-                      {teacher.name}
-                    </MenuItem>
+                  <TextField
+                    fullWidth
+                    label="Subject"
+                    value={row.subject}
+                    onChange={(event) =>
+                      handleChange(index, "subject", event.target.value)
+                    }
+                  />
+                  <TextField
+                    select
+                    fullWidth
+                    label="Teacher"
+                    value={row.teacherId}
+                    onChange={(event) =>
+                      handleChange(index, "teacherId", event.target.value)
+                    }
+                  >
+                    {teachers.map((teacher) => (
+                      <MenuItem key={teacher.id} value={teacher.id}>
+                        {teacher.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Time slot"
+                    value={row.timeSlot}
+                    onChange={(event) =>
+                      handleChange(index, "timeSlot", event.target.value)
+                    }
+                  >
+                    {TIME_SLOTS.map((slot) => (
+                      <MenuItem key={slot} value={slot}>
+                        {slot}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <IconButton
+                    onClick={() =>
+                      setPeriods(periods.filter((_, i) => i !== index))
+                    }
+                    aria-label="Remove period"
+                    disabled={periods.length === 1}
+                  >
+                    <DeleteOutlineRoundedIcon />
+                  </IconButton>
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                  Days this class meets
+                </Typography>
+                <ToggleButtonGroup
+                  value={row.days}
+                  onChange={(_event, days) => handleChange(index, "days", days || [])}
+                  size="small"
+                >
+                  {WEEKDAYS.map((day) => (
+                    <ToggleButton key={day.value} value={day.value} sx={{ px: 1.5 }}>
+                      {day.label}
+                    </ToggleButton>
                   ))}
-                </TextField>
-                <TextField
-                  fullWidth
-                  label="Classes / week"
-                  name="classesPerWeek"
-                  type="number"
-                  value={subjectRow.classesPerWeek}
-                  onChange={(event) => handleChange(index, event)}
-                />
-                <TextField
-                  select
-                  fullWidth
-                  label="Time slot"
-                  name="timeSlot"
-                  value={subjectRow.timeSlot}
-                  onChange={(event) => handleChange(index, event)}
-                >
-                  {timeSlots.map((slot) => (
-                    <MenuItem key={slot} value={slot}>
-                      {slot}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <IconButton
-                  onClick={() => handleRemoveRow(index)}
-                  aria-label="Remove period"
-                  disabled={subjects.length === 1}
-                >
-                  <DeleteOutlineRoundedIcon />
-                </IconButton>
+                </ToggleButtonGroup>
               </Box>
             ))}
           </Stack>
@@ -258,7 +272,7 @@ export default function TimetableBuilder() {
               {saving ? "Publishing…" : "Publish timetable"}
             </Button>
             <Button
-              onClick={handleAddRow}
+              onClick={() => setPeriods([...periods, { ...emptyRow }])}
               variant="outlined"
               size="large"
               startIcon={<AddRoundedIcon />}

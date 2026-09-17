@@ -23,13 +23,16 @@ import PageShell from "@/components/layout/PageShell";
 import BatchPicker from "@/components/batches/BatchPicker";
 import { useBatchSelection } from "@/hooks/useBatches";
 import { ALL_BATCHES } from "@/utils/batches";
+import { useSession } from "next-auth/react";
+import { isAdmin } from "@/utils/permissions";
 
 export default function TeacherTests() {
+  const { data: session } = useSession();
   const { batches, loading: batchesLoading, batchId, setBatchId } =
-    useBatchSelection({ allowAll: true });
+    useBatchSelection({ allowAll: isAdmin(session?.user) });
 
   const [rows, setRows] = useState([]);
-  const [formData, setFormData] = useState({ date: "", subject: "" });
+  const [formData, setFormData] = useState({ date: "", subject: "", max_marks: "100" });
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
 
@@ -63,7 +66,7 @@ export default function TeacherTests() {
       });
       if (response.status === 200) {
         toast.success("Test scheduled.");
-        setFormData({ date: "", subject: "" });
+        setFormData({ date: "", subject: "", max_marks: "100" });
         getTests();
       }
     } catch (error) {
@@ -136,7 +139,8 @@ export default function TeacherTests() {
                 loading={batchesLoading}
                 value={batchId}
                 onChange={setBatchId}
-                allowAll
+                allowAll={isAdmin(session?.user)}
+                canCreate={isAdmin(session?.user)}
                 label="Schedule for"
                 allLabel="All students"
                 helperText=" "
@@ -161,6 +165,16 @@ export default function TeacherTests() {
                 value={formData.subject}
                 helperText=" "
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={2}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Out of"
+                value={formData.max_marks}
+                helperText=" "
+                onChange={(e) => setFormData({ ...formData, max_marks: e.target.value })}
               />
             </Grid>
             <Grid item xs={12} sm={2}>

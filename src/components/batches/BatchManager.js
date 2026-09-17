@@ -22,12 +22,26 @@ import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import axios from "axios";
 import toast from "react-hot-toast";
 import PageShell from "@/components/layout/PageShell";
 import { useBatches } from "@/hooks/useBatches";
 
 const emptyDraft = { name: "", subject: "", description: "" };
+
+function asTeachers(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
 
 function BatchFormDialog({ open, initial, saving, onClose, onSubmit }) {
   const [draft, setDraft] = useState(emptyDraft);
@@ -192,12 +206,122 @@ function RosterDialog({ batch, onClose, onSaved }) {
   );
 }
 
+function FacultyDialog({ batch, onClose, onSaved }) {
+  const [teachers, setTeachers] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const open = Boolean(batch);
+
+  useEffect(() => {
+    if (!batch) return;
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const [all, assigned] = await Promise.all([
+          axios.get("/api/teachers"),
+          axios.get(`/api/batches/${batch.id}/teachers`),
+        ]);
+
+        if (cancelled) return;
+
+        setTeachers(Array.isArray(all.data) ? all.data : []);
+        setSelectedIds(
+          (Array.isArray(assigned.data) ? assigned.data : []).map((row) => row.id)
+        );
+      } catch (error) {
+        console.error("Error loading faculty:", error);
+        if (!cancelled) toast.error("Could not load teachers.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [batch]);
+
+  const columns = useMemo(
+    () => [
+      { field: "name", headerName: "Teacher", flex: 1, minWidth: 180 },
+      { field: "email", headerName: "Email", flex: 1, minWidth: 220 },
+    ],
+    []
+  );
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await axios.put(`/api/batches/${batch.id}/teachers`, {
+        teacherIds: selectedIds.map(String),
+      });
+      toast.success("Faculty updated.");
+      onSaved();
+      onClose();
+    } catch (error) {
+      console.error("Error saving faculty:", error);
+      toast.error(error?.response?.data?.message || "Could not save faculty.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+      <DialogTitle>
+        {batch?.name}
+        <Typography variant="body2" color="text.secondary">
+          Teachers you tick here can take attendance, publish results, and set
+          work for this batch.
+        </Typography>
+      </DialogTitle>
+      <DialogContent>
+        {loading ? (
+          <Skeleton variant="rounded" height={320} />
+        ) : teachers.length === 0 ? (
+          <Box sx={{ py: 6, textAlign: "center" }}>
+            <Typography color="text.secondary">
+              No teacher accounts yet. Invite one from the Invites page.
+            </Typography>
+          </Box>
+        ) : (
+          <DataGrid
+            autoHeight
+            rows={teachers}
+            columns={columns}
+            getRowId={(row) => `${row.id}`}
+            checkboxSelection
+            rowSelectionModel={selectedIds}
+            onRowSelectionModelChange={setSelectedIds}
+            disableRowSelectionOnClick
+            slots={{ toolbar: GridToolbar }}
+            slotProps={{ toolbar: { showQuickFilter: true } }}
+          />
+        )}
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mr: "auto" }}>
+          {selectedIds.length} selected
+        </Typography>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSave} disabled={saving || loading}>
+          {saving ? "Saving…" : "Save faculty"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export default function BatchManager() {
   const { batches, loading, refresh } = useBatches();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [rosterFor, setRosterFor] = useState(null);
+  const [facultyFor, setFacultyFor] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
 
   const openCreate = () => {
@@ -252,7 +376,7 @@ export default function BatchManager() {
   return (
     <PageShell
       title="Batches"
-      subtitle="Group your students into the classes you actually teach. Attendance, results, assignments, and timetables are all scoped to a batch."
+      subtitle="Create classes, assign teachers, and manage who sits on each roll. Teachers only see the batches you put them on."
       action={
         <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={openCreate}>
           New batch
@@ -319,14 +443,24 @@ export default function BatchManager() {
                     </Stack>
                   </Stack>
 
-                  <Chip
-                    size="small"
-                    icon={<GroupsOutlinedIcon fontSize="small" />}
-                    label={`${batch.student_count} ${
-                      batch.student_count === 1 ? "student" : "students"
-                    }`}
-                    sx={{ mb: 1.5 }}
-                  />
+                  <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: "wrap", gap: 1 }}>
+                    <Chip
+                      size="small"
+                      icon={<GroupsOutlinedIcon fontSize="small" />}
+                      label={`${batch.student_count} ${
+                        batch.student_count === 1 ? "student" : "students"
+                      }`}
+                    />
+                    {asTeachers(batch.teachers).map((teacher) => (
+                      <Chip
+                        key={teacher.id}
+                        size="small"
+                        variant="outlined"
+                        icon={<PersonOutlineRoundedIcon fontSize="small" />}
+                        label={teacher.name}
+                      />
+                    ))}
+                  </Stack>
 
                   {batch.description && (
                     <Typography variant="body2" color="text.secondary">
@@ -335,13 +469,22 @@ export default function BatchManager() {
                   )}
                 </CardContent>
                 <Box sx={{ px: 3, pb: 2.5 }}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    onClick={() => setRosterFor(batch)}
-                  >
-                    Manage students
-                  </Button>
+                  <Stack spacing={1}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={() => setRosterFor(batch)}
+                    >
+                      Manage students
+                    </Button>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={() => setFacultyFor(batch)}
+                    >
+                      Assign teachers
+                    </Button>
+                  </Stack>
                 </Box>
               </Card>
             </Grid>
@@ -363,6 +506,12 @@ export default function BatchManager() {
       <RosterDialog
         batch={rosterFor}
         onClose={() => setRosterFor(null)}
+        onSaved={refresh}
+      />
+
+      <FacultyDialog
+        batch={facultyFor}
+        onClose={() => setFacultyFor(null)}
         onSaved={refresh}
       />
 

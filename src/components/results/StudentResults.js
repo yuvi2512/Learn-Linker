@@ -10,6 +10,7 @@ import PageShell from "@/components/layout/PageShell";
 import BatchPicker from "@/components/batches/BatchPicker";
 import { useBatchSelection } from "@/hooks/useBatches";
 import { ALL_BATCHES } from "@/utils/batches";
+import moment from "moment";
 
 const TOTAL_PER_SUBJECT = 100;
 
@@ -33,7 +34,10 @@ export default function StudentResults() {
         });
         if (!cancelled && Array.isArray(response.data)) {
           setRows(
-            response.data.map((row) => ({ ...row, Total: TOTAL_PER_SUBJECT }))
+            response.data.map((row) => ({
+              ...row,
+              Total: Number(row.max_marks) || TOTAL_PER_SUBJECT,
+            }))
           );
         }
       } catch (error) {
@@ -67,12 +71,14 @@ export default function StudentResults() {
     doc.text(`Batch: ${selected?.name || "All batches"}`, 20, 47);
 
     doc.autoTable({
-      head: [["Batch", "Subject Name", "Marks Obtained", "Total Marks"]],
+      head: [["Batch", "Test / Subject", "Marks Obtained", "Total Marks"]],
       body: rows.map((row) => [
         row.batch_name || "—",
-        row.subject_name,
+        row.test_subject
+          ? `${row.subject_name} (${moment(row.test_date).format("DD MMM")})`
+          : row.subject_name,
         row.marks_obtained,
-        row.Total,
+        row.max_marks || row.Total,
       ]),
       startY: 56,
     });
@@ -96,6 +102,21 @@ export default function StudentResults() {
       ),
     },
     { field: "subject_name", headerName: "Subject", flex: 1, minWidth: 150 },
+    {
+      field: "test_subject",
+      headerName: "Test",
+      width: 170,
+      renderCell: (params) =>
+        params.row.test_id ? (
+          <Chip
+            size="small"
+            variant="outlined"
+            label={moment(params.row.test_date).format("DD MMM YYYY")}
+          />
+        ) : (
+          "—"
+        ),
+    },
     { field: "marks_obtained", headerName: "Marks", width: 120 },
     { field: "Total", headerName: "Out of", width: 120 },
   ];

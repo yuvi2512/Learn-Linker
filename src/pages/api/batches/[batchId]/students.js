@@ -1,15 +1,12 @@
 import { pool } from "../../../../../lib/db";
 import { requireUser, methodNotAllowed } from "@/utils/apiAuth";
-import { batchExists, isUuid, parseBatchId } from "@/utils/batches";
+import { isAdmin } from "@/utils/permissions";
+import { batchExists, isUuid, parseBatchId, requireBatchAccess } from "@/utils/batches";
 
 async function listRoster(res, batchId) {
   const client = await pool.connect();
 
   try {
-    if (!(await batchExists(client, batchId))) {
-      return res.status(404).json({ message: "That batch no longer exists." });
-    }
-
     const { rows } = await client.query(
       `SELECT u.id, u.name, u.email, bs.added_at
          FROM public.batch_students bs
@@ -25,11 +22,6 @@ async function listRoster(res, batchId) {
   }
 }
 
-/**
- * Replaces the roster with exactly the ids provided, so the teacher's checkbox
- * list is the source of truth. Removing a student keeps their existing
- * attendance rows for the batch — those describe classes that did happen.
- */
 async function replaceRoster(req, res, batchId) {
   const { studentIds } = req.body || {};
 
@@ -43,7 +35,6 @@ async function replaceRoster(req, res, batchId) {
   }
 
   const unique = [...new Set(studentIds.map((id) => id.toLowerCase()))];
-
   const client = await pool.connect();
 
   try {
@@ -51,7 +42,6 @@ async function replaceRoster(req, res, batchId) {
       return res.status(404).json({ message: "That batch no longer exists." });
     }
 
-    // Teachers must not end up on a student roster.
     if (unique.length > 0) {
       const { rows } = await client.query(
         `SELECT id FROM public.users WHERE id = ANY($1::uuid[]) AND role = 'student'`,
@@ -84,7 +74,6 @@ async function replaceRoster(req, res, batchId) {
     }
 
     await client.query("COMMIT");
-
     res.status(200).json({ message: "Roster updated.", count: unique.length });
   } catch (error) {
     await client.query("ROLLBACK");
@@ -105,10 +94,21 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
+      const client = await pool.connect();
+      try {
+        if (!(await requireBatchAccess(client, user, batchId, res))) return;
+      } finally {
+        client.release();
+      }
       return await listRoster(res, batchId);
     }
 
     if (req.method === "PUT") {
+      if (!isAdmin(user)) {
+        return res
+          .status(403)
+          .json({ message: "Only the institute admin can change a batch roster." });
+      }
       return await replaceRoster(req, res, batchId);
     }
 

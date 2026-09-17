@@ -16,28 +16,31 @@ export default function BatchPicker({
   allLabel = "All students",
   label = "Batch",
   helperText,
+  emptyHint,
+  canCreate = false,
   disabled = false,
   sx,
 }) {
   const empty = !loading && batches.length === 0;
 
-  // A remembered batch can be missing from the list for a render or two while
-  // it loads; MUI warns about a value with no matching option, so drop it.
   const inRange =
     (allowAll && value === ALL_BATCHES) ||
     batches.some((batch) => batch.id === value);
 
-  const fallbackHelp = empty ? (
-    <Typography component="span" variant="caption">
-      No batches yet.{" "}
-      <Link href="/batches" style={{ color: "#2563EB", fontWeight: 600 }}>
-        Create one
-      </Link>{" "}
-      to get started.
-    </Typography>
-  ) : (
-    helperText
-  );
+  const fallbackHelp = empty
+    ? emptyHint ||
+      (canCreate ? (
+        <Typography component="span" variant="caption">
+          No batches yet.{" "}
+          <Link href="/batches" style={{ color: "#2563EB", fontWeight: 600 }}>
+            Create one
+          </Link>{" "}
+          to get started.
+        </Typography>
+      ) : (
+        "No batches assigned yet. Ask your admin to add you to a class."
+      ))
+    : helperText;
 
   return (
     <TextField

@@ -1,4 +1,4 @@
 import withAuth from "@/utils/withAuth";
 import BatchManager from "@/components/batches/BatchManager";
 
-export default withAuth(BatchManager, ["teacher"]);
+export default withAuth(BatchManager, ["admin"]);

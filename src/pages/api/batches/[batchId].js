@@ -49,8 +49,6 @@ async function deleteBatch(res, batchId) {
   const client = await pool.connect();
 
   try {
-    // Attendance, marks, and the roster cascade with the batch; assignments and
-    // tests are also removed because they were written for this batch only.
     const result = await client.query(
       "DELETE FROM public.batches WHERE id = $1",
       [batchId]
@@ -67,7 +65,7 @@ async function deleteBatch(res, batchId) {
 }
 
 export default async function handler(req, res) {
-  const user = await requireUser(req, res, ["teacher"]);
+  const user = await requireUser(req, res, ["admin"]);
   if (!user) return;
 
   const { batchId, error } = parseBatchId(req.query.batchId, {

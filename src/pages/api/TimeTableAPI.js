@@ -1,17 +1,33 @@
 import { pool } from "../../../lib/db";
 import { requireUser, methodNotAllowed } from "@/utils/apiAuth";
-import { canBuildTimetable } from "@/utils/permissions";
-import { batchExists, parseBatchId } from "@/utils/batches";
+import { canBuildTimetable, isAdmin } from "@/utils/permissions";
+import {
+  parseBatchId,
+  requireBatchAccess,
+  teacherBatchIds,
+} from "@/utils/batches";
+import { WEEKDAYS, TIME_SLOTS } from "@/utils/timetable";
 
-// batch_id IS NULL is the institute-wide grid every batch falls back to.
+const validDays = new Set(WEEKDAYS.map((day) => day.value));
+const validSlots = new Set(TIME_SLOTS);
+
 const STUDENT_GRID = `
-  SELECT s.*, b.name AS batch_name
+  SELECT s.id,
+         s.batch_id,
+         s.subject,
+         s.teacher_id,
+         s.day_of_week,
+         s.timeslot,
+         u.name AS teacher_name,
+         b.name AS batch_name
     FROM public.schedule s
+    LEFT JOIN public.users u ON u.id = s.teacher_id
     LEFT JOIN public.batches b ON b.id = s.batch_id
    WHERE s.batch_id IS NULL
       OR s.batch_id IN (
            SELECT batch_id FROM public.batch_students WHERE student_id = $1
          )
+   ORDER BY s.day_of_week, s.timeslot
 `;
 
 async function readTimetable(req, res, user) {
@@ -21,19 +37,52 @@ async function readTimetable(req, res, user) {
   const client = await pool.connect();
 
   try {
-    let result;
-
     if (user.role === "student") {
-      result = await client.query(STUDENT_GRID, [user.id]);
-    } else {
-      result = await client.query(
-        `SELECT s.*, b.name AS batch_name
-           FROM public.schedule s
-           LEFT JOIN public.batches b ON b.id = s.batch_id
-          WHERE s.batch_id IS NOT DISTINCT FROM $1`,
-        [batchId]
-      );
+      const result = await client.query(STUDENT_GRID, [user.id]);
+      return res.status(200).json(result.rows);
     }
+
+    if (batchId && !(await requireBatchAccess(client, user, batchId, res))) {
+      return;
+    }
+
+    if (!batchId && !isAdmin(user)) {
+      const assigned = await teacherBatchIds(client, user.id);
+      const result = await client.query(
+        `SELECT s.id,
+                s.batch_id,
+                s.subject,
+                s.teacher_id,
+                s.day_of_week,
+                s.timeslot,
+                u.name AS teacher_name,
+                b.name AS batch_name
+           FROM public.schedule s
+           LEFT JOIN public.users u ON u.id = s.teacher_id
+           LEFT JOIN public.batches b ON b.id = s.batch_id
+          WHERE s.batch_id = ANY($1::uuid[]) OR s.batch_id IS NULL
+          ORDER BY s.day_of_week, s.timeslot`,
+        [assigned]
+      );
+      return res.status(200).json(result.rows);
+    }
+
+    const result = await client.query(
+      `SELECT s.id,
+              s.batch_id,
+              s.subject,
+              s.teacher_id,
+              s.day_of_week,
+              s.timeslot,
+              u.name AS teacher_name,
+              b.name AS batch_name
+         FROM public.schedule s
+         LEFT JOIN public.users u ON u.id = s.teacher_id
+         LEFT JOIN public.batches b ON b.id = s.batch_id
+        WHERE s.batch_id IS NOT DISTINCT FROM $1
+        ORDER BY s.day_of_week, s.timeslot`,
+      [batchId]
+    );
 
     res.status(200).json(result.rows);
   } finally {
@@ -41,54 +90,82 @@ async function readTimetable(req, res, user) {
   }
 }
 
-async function publishTimetable(req, res) {
-  const { timetable, batchId: rawBatchId } = req.body || {};
+async function publishTimetable(req, res, user) {
+  const { periods, batchId: rawBatchId } = req.body || {};
 
-  const { batchId, error } = parseBatchId(rawBatchId);
+  const { batchId, error } = parseBatchId(rawBatchId, { allowNull: true });
   if (error) return res.status(400).json({ message: error });
 
-  if (!Array.isArray(timetable) || timetable.length === 0) {
-    return res.status(400).json({ message: "No timetable rows were provided." });
+  if (!Array.isArray(periods) || periods.length === 0) {
+    return res.status(400).json({ message: "Add at least one period." });
   }
 
-  const invalid = timetable.some(
-    (row) => !row.subject || !row.teacherId || !row.classesPerWeek || !row.timeSlot
-  );
-  if (invalid) {
-    return res
-      .status(400)
-      .json({ message: "Every period needs a subject, teacher, load, and slot." });
+  const rows = [];
+  const seen = new Set();
+
+  for (const period of periods) {
+    const subject = String(period.subject || "").trim();
+    const teacherId = period.teacherId;
+    const timeSlot = period.timeSlot;
+    const days = Array.isArray(period.days)
+      ? [...new Set(period.days.map(Number))]
+      : [];
+
+    if (!subject || !teacherId || !timeSlot || days.length === 0) {
+      return res.status(400).json({
+        message: "Every period needs a subject, teacher, slot, and at least one day.",
+      });
+    }
+
+    if (!validSlots.has(timeSlot)) {
+      return res.status(400).json({ message: `Unknown time slot: ${timeSlot}` });
+    }
+
+    for (const day of days) {
+      if (!validDays.has(day)) {
+        return res.status(400).json({ message: "Pick weekdays from Monday to Saturday." });
+      }
+      const key = `${day}|${timeSlot}`;
+      if (seen.has(key)) {
+        return res.status(400).json({
+          message: "Two subjects cannot share the same day and time slot.",
+        });
+      }
+      seen.add(key);
+      rows.push({ subject, teacherId, timeSlot, day });
+    }
   }
 
   const client = await pool.connect();
 
   try {
-    if (batchId && !(await batchExists(client, batchId))) {
-      return res.status(404).json({ message: "That batch no longer exists." });
+    if (batchId && !(await requireBatchAccess(client, user, batchId, res))) {
+      return;
+    }
+
+    const teacherIds = [...new Set(rows.map((row) => row.teacherId))];
+    const { rows: teachers } = await client.query(
+      `SELECT id FROM public.users
+        WHERE id = ANY($1::uuid[]) AND role IN ('teacher', 'admin')`,
+      [teacherIds]
+    );
+    if (teachers.length !== teacherIds.length) {
+      return res.status(400).json({ message: "One of those teachers is not valid." });
     }
 
     await client.query("BEGIN");
 
-    // Publishing replaces this batch's grid only, so other batches keep theirs.
     await client.query(
       "DELETE FROM public.schedule WHERE batch_id IS NOT DISTINCT FROM $1",
       [batchId]
     );
 
-    const queryText = `
-      INSERT INTO public.schedule (batch_id, subject, teachername, classesperweek, timeSlot)
-      VALUES ($1, $2, $3, $4, $5)
-    `;
-
-    for (const entry of timetable) {
-      const { subject, teacherId, classesPerWeek, timeSlot } = entry;
-      await client.query(queryText, [
-        batchId,
-        subject,
-        teacherId,
-        classesPerWeek,
-        timeSlot,
-      ]);
+    for (const row of rows) {
+      await client.query(
+        `INSERT INTO public.schedule (batch_id, subject, teacher_id, day_of_week, timeslot)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [batchId, row.subject, row.teacherId, row.day, row.timeSlot]
+      );
     }
 
     await client.query("COMMIT");
@@ -113,16 +190,16 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      const user = await requireUser(req, res, ["teacher"]);
+      const user = await requireUser(req, res, ["admin"]);
       if (!user) return;
 
       if (!canBuildTimetable(user)) {
         return res
           .status(403)
-          .json({ message: "You are not allowed to publish the timetable." });
+          .json({ message: "Only the institute admin can publish the timetable." });
       }
 
-      return await publishTimetable(req, res);
+      return await publishTimetable(req, res, user);
     }
 
     return methodNotAllowed(res, ["GET", "POST"]);
