@@ -90,7 +90,9 @@ function SidebarContent({ links, pathname, onNavigate, session, onLogout }) {
       <List sx={{ flex: 1, py: 0 }}>
         {links.map((item) => {
           const Icon = item.icon;
-          const active = pathname === item.href;
+          const active =
+            pathname === item.href ||
+            (item.href === "/tests" && pathname.startsWith("/tests/"));
           return (
             <ListItemButton
               key={item.href}

@@ -19,6 +19,8 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import moment from "moment";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
+import Link from "next/link";
 import PageShell from "@/components/layout/PageShell";
 import BatchPicker from "@/components/batches/BatchPicker";
 import { useBatchSelection } from "@/hooks/useBatches";
@@ -129,6 +131,16 @@ export default function TeacherTests() {
     <PageShell
       title="Tests"
       subtitle="Schedule an exam for one batch or for everyone. Students see it on their overview."
+      action={
+        <Button
+          component={Link}
+          href="/tests/paper"
+          variant="outlined"
+          startIcon={<AutoAwesomeOutlinedIcon />}
+        >
+          Prepare NCERT paper
+        </Button>
+      }
     >
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
