@@ -73,10 +73,29 @@ export function useBatchSelection({ allowAll = false } = {}) {
     if (allowAll && batchId === ALL_BATCHES) return;
 
     // The remembered batch was deleted, or nothing is picked yet.
-    setBatchIdState(allowAll ? ALL_BATCHES : batches[0]?.id || "");
+    const fallback = allowAll ? ALL_BATCHES : batches[0]?.id || "";
+    setBatchIdState(fallback);
+    if (!allowAll) storeBatch(fallback);
   }, [loading, batches, batchId, allowAll]);
 
-  const selected = batches.find((batch) => batch.id === batchId) || null;
+  const selectedBatch = batches.find((batch) => batch.id === batchId);
+  const resolvedBatchId = selectedBatch
+    ? batchId
+    : loading
+      ? allowAll
+        ? ALL_BATCHES
+        : ""
+      : allowAll
+        ? ALL_BATCHES
+        : batches[0]?.id || "";
+  const selected = batches.find((batch) => batch.id === resolvedBatchId) || null;
 
-  return { batches, loading, batchId, setBatchId, selected, refresh };
+  return {
+    batches,
+    loading,
+    batchId: resolvedBatchId,
+    setBatchId,
+    selected,
+    refresh,
+  };
 }
