@@ -11,6 +11,7 @@ import AppShell from "@/components/layout/AppShell";
 import theme from "../theme";
 import "../styles/globals.css";
 import axios from "axios";
+import { Analytics } from "@vercel/analytics/next"
 
 axios.defaults.withCredentials = true;
 
@@ -112,6 +113,7 @@ export default function MyApp({ Component, pageProps: { session, ...pageProps } 
           </SessionProvider>
         </ThemeProvider>
       </Box>
+      <Analytics />
     </>
   );
 }
