@@ -76,7 +76,7 @@ function MockDashboard() {
       sx={{
         width: "100%",
         maxWidth: 520,
-        borderRadius: 4,
+        borderRadius: 2,
         border: "1px solid rgba(255,255,255,0.12)",
         background:
           "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))",
